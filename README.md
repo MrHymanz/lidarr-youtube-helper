@@ -1,26 +1,25 @@
+![Docker](https://img.shields.io/badge/docker-supported-blue)
+![Python](https://img.shields.io/badge/python-3.12-green)
+![License](https://img.shields.io/badge/license-MIT-orange)
 # Lidarr YouTube Helper
 
 A lightweight web application that helps Lidarr users find missing albums on YouTube and YouTube Music, review matches, and download them using yt-dlp.
 
-## Features
+## Current Features
 
-* Scan Lidarr missing albums
-* Automatic YouTube search
-* Direct YouTube Music search links
-* Queue-based workflow
-* Full album video downloads
-* Playlist / album track downloads
-* Multi-language support
-
-  * English
-  * Dutch
-  * Norwegian
-* Lidarr-inspired dark theme
-* Docker deployment
+- Scan Lidarr missing albums
+- Review YouTube search results
+- Paste custom YouTube Music album URLs
+- Queue downloads
+- Download full album videos
+- Download playlists as separate tracks
+- Multi-language UI
+- Docker deployment
 
 ## Screenshots
 
-Screenshots
+![Main Interface](screenshots/lidarr-helper-1.png)
+![Main Interface](screenshots/lidarr-helper-2.png)
 
 ## Requirements
 
@@ -42,6 +41,8 @@ Copy the example environment file:
 
 ```bash
 cp .env.example .env
+nano .env
+docker compose up -d --build
 ```
 
 Edit the configuration:
@@ -67,7 +68,7 @@ http://SERVER_IP:8999
 Example:
 
 ```env
-LIDARR_URL=http://192.168.1.40:8686
+LIDARR_URL=http://lidarr:8686
 LIDARR_API_KEY=YOUR_API_KEY
 DOWNLOAD_DIR=/downloads
 ```
