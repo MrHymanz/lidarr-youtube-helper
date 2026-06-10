@@ -41,8 +41,6 @@ Copy the example environment file:
 
 ```bash
 cp .env.example .env
-nano .env
-docker compose up -d --build
 ```
 
 Edit the configuration:
