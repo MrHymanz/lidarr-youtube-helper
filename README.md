@@ -20,7 +20,7 @@ A lightweight web application that helps Lidarr users find missing albums on You
 
 ## Screenshots
 
-Add screenshots here.
+Screenshots
 
 ## Requirements
 
