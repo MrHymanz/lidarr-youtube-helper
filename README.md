@@ -121,3 +121,11 @@ app/settings.json
 ## License
 
 MIT License
+
+## Disclaimer
+
+This project does not provide, host, distribute or include copyrighted media.
+
+Users are responsible for complying with the Terms of Service and copyright laws applicable in their jurisdiction.
+
+This project acts only as a helper interface for Lidarr and yt-dlp.
