@@ -1,0 +1,15 @@
+services:
+  lidarr-youtube-helper:
+    build: ./app
+    container_name: lidarr-youtube-helper
+    user: "1008:1001"
+    ports:
+      - "8999:8999"
+    environment:
+      - LIDARR_URL=${LIDARR_URL}
+      - LIDARR_API_KEY=${LIDARR_API_KEY}
+      - DOWNLOAD_DIR=${DOWNLOAD_DIR}
+    volumes:
+      - ./app:/app
+      - /data/media/music/YouTube/Lidarr Missing:/downloads
+    restart: unless-stopped

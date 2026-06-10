@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{{ tr.settings_title }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="logo">◉ Lidarr Helper</div>
+      <a class="nav" href="{{ lidarr_url }}" target="_blank">
+          {{ tr.library }}
+      </a>
+
+      <a class="nav" href="/">
+          YouTube Helper
+      </a>
+
+      <a class="nav" href="{{ lidarr_url }}/wanted/missing" target="_blank">
+          {{ tr.wanted }}
+      </a>
+
+      <a class="nav active" href="/settings">
+          {{ tr.settings }}
+      </a>
+  </aside>
+
+  <main class="content">
+    <h1>{{ tr.settings_title }}</h1>
+
+    <div class="card">
+      <form method="post" action="/settings">
+        <label>
+          <strong>{{ tr.language }}</strong>
+        </label>
+
+        <select name="language">
+          {% for code, lang in languages.items() %}
+            <option value="{{ code }}" {% if code == current_language %}selected{% endif %}>
+              {{ lang.language_name }}
+            </option>
+          {% endfor %}
+        </select>
+
+        <br><br>
+
+        <button type="submit">{{ tr.save }}</button>
+        <a class="button-link" href="/">{{ tr.back }}</a>
+      </form>
+    </div>
+  </main>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# VS Code
+.vscode/
+
+# Environment variables
+.env
+
+# Runtime data
+app/cache.json
+app/queue.json
+app/processed.json
+app/settings.json
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/

@@ -1,0 +1,178 @@
+:root {
+  --bg: #1f1f1f;
+  --sidebar: #2b2b2b;
+  --panel: #2f2f2f;
+  --panel2: #262626;
+  --border: #555;
+  --text: #d8d8d8;
+  --muted: #aaa;
+  --accent: #00cc7a;
+  --link: #62a8ff;
+  --button: #3a3a3a;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 235px;
+  background: var(--sidebar);
+  padding-top: 20px;
+  border-right: 1px solid #222;
+}
+
+.logo {
+  font-size: 22px;
+  font-weight: bold;
+  color: var(--accent);
+  padding: 0 24px 24px;
+}
+
+.nav {
+  display: block;
+  padding: 14px 24px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.nav.active {
+  color: var(--accent);
+  border-left: 4px solid var(--accent);
+  background: #333;
+}
+
+.content {
+  flex: 1;
+  padding: 28px 36px;
+}
+
+h1, h2, h3 {
+  margin-top: 0;
+  font-weight: 500;
+}
+
+a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 22px;
+  align-items: center;
+}
+
+button, .button-link {
+  background: var(--button);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 9px 14px;
+  cursor: pointer;
+  display: inline-block;
+}
+
+button:hover, .button-link:hover {
+  background: #4a4a4a;
+  text-decoration: none;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 18px;
+}
+
+.help-box {
+  border-left: 4px solid var(--accent);
+  background: var(--panel2);
+}
+
+.queue-count {
+  background: #f5a623;
+  color: #111;
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-weight: bold;
+  margin-left: 8px;
+}
+
+.album-title {
+  font-size: 20px;
+  margin-bottom: 8px;
+  color: #fff;
+}
+
+.muted, small {
+  color: var(--muted);
+}
+
+.search-links {
+  margin: 12px 0;
+}
+
+.result {
+  background: #252525;
+  border: 1px solid #444;
+  padding: 10px;
+  border-radius: 4px;
+  margin: 8px 0;
+}
+
+.custom-url {
+  background: #2b281e;
+  border: 1px solid #6b5d2a;
+  padding: 12px;
+  border-radius: 4px;
+  margin-top: 14px;
+}
+
+.download-mode {
+  background: #252525;
+  border: 1px solid #444;
+  padding: 12px;
+  border-radius: 4px;
+  margin-top: 14px;
+}
+
+input[type=text], select {
+  width: 100%;
+  background: #1c1c1c;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 9px;
+  box-sizing: border-box;
+  margin-top: 6px;
+  border-radius: 3px;
+}
+
+input[type=radio] {
+  accent-color: var(--accent);
+}
+
+ul {
+  margin-bottom: 0;
+}
+
+code {
+  color: #ddd;
+  background: #1a1a1a;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
