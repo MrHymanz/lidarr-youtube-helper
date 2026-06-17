@@ -293,6 +293,42 @@ def add_queue():
 
     return redirect(url_for("index"))
 
+@app.route("/queue/remove", methods=["POST"])
+def remove_queue_item():
+    queue = load_json(QUEUE_FILE, [])
+    key = request.form.get("key")
+
+    queue = [item for item in queue if item["key"] != key]
+    save_json(QUEUE_FILE, queue)
+
+    return redirect(url_for("index"))
+
+
+@app.route("/queue/clear", methods=["POST"])
+def clear_queue():
+    save_json(QUEUE_FILE, [])
+    return redirect(url_for("index"))
+
+
+@app.route("/queue/move", methods=["POST"])
+def move_queue_item():
+    queue = load_json(QUEUE_FILE, [])
+    key = request.form.get("key")
+    direction = request.form.get("direction")
+
+    index = next((i for i, item in enumerate(queue) if item["key"] == key), None)
+
+    if index is not None:
+        if direction == "up" and index > 0:
+            queue[index - 1], queue[index] = queue[index], queue[index - 1]
+
+        if direction == "down" and index < len(queue) - 1:
+            queue[index + 1], queue[index] = queue[index], queue[index + 1]
+
+    save_json(QUEUE_FILE, queue)
+
+    return redirect(url_for("index"))
+
 
 @app.route("/download", methods=["POST"])
 def download_queue():
@@ -308,22 +344,38 @@ def download_queue():
 
         if mode == "playlist":
             output_template = "%(playlist_index,track_number|)02d - %(title)s.%(ext)s"
+
             cmd = [
-                "yt-dlp", item["url"], "--yes-playlist",
+                "yt-dlp",
+                item["url"],
+                "--yes-playlist",
+                "--ignore-errors",
+                "--no-abort-on-error",
                 "-f", "bestaudio[ext=m4a]/bestaudio/best",
-                "--embed-thumbnail", "--add-metadata",
+                "--embed-thumbnail",
+                "--add-metadata",
                 "-o", str(target / output_template),
             ]
         else:
             cmd = [
-                "yt-dlp", item["url"], "--no-playlist",
+                "yt-dlp",
+                item["url"],
+                "--no-playlist",
                 "-f", "bestaudio[ext=m4a]/bestaudio/best",
-                "--embed-thumbnail", "--add-metadata",
+                "--embed-thumbnail",
+                "--add-metadata",
                 "-o", str(target / "%(title)s.%(ext)s"),
             ]
 
         result = subprocess.run(cmd)
-        if result.returncode == 0:
+
+        downloaded_files = (
+            list(target.glob("*.m4a")) +
+            list(target.glob("*.mp3")) +
+            list(target.glob("*.opus"))
+        )
+
+        if result.returncode == 0 or downloaded_files:
             processed.append(key)
         else:
             remaining.append(item)

@@ -176,3 +176,37 @@ code {
   padding: 2px 5px;
   border-radius: 3px;
 }
+
+.queue-actions {
+  margin-bottom: 12px;
+}
+
+.queue-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.queue-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #252525;
+  border: 1px solid #444;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.queue-item-title {
+  flex: 1;
+}
+
+.queue-item-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.queue-item-actions form,
+.queue-actions form {
+  margin: 0;
+}
