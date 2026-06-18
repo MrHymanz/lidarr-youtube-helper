@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 from pathlib import Path
+from datetime import datetime
 
 import requests
 from flask import Flask, redirect, render_template, request, url_for
@@ -16,6 +17,8 @@ QUEUE_FILE = Path("/app/queue.json")
 PROCESSED_FILE = Path("/app/processed.json")
 CACHE_FILE = Path("/app/cache.json")
 SETTINGS_FILE = Path("/app/settings.json")
+DOWNLOADS_FILE = Path("/app/downloads.json")
+FAILED_FILE = Path("/app/failed.json")
 
 HEADERS = {"X-Api-Key": LIDARR_API_KEY}
 
@@ -58,6 +61,28 @@ TRANSLATIONS = {
         "language": "Language",
         "save": "Save settings",
         "back": "Back",
+        "incomplete_albums": "Incomplete Albums",
+        "downloads": "Downloads",
+        "completed": "Completed",
+        "failed": "Failed",
+        "queued": "Queued",
+        "clear_completed": "Clear Completed",
+        "clear_failed": "Clear Failed",
+        "no_incomplete": "No incomplete albums found.",
+        "partially_downloaded": "Partially downloaded albums",
+        "tracks_present": "tracks present",
+        "missing": "missing",
+        "open_music_search": "Open YouTube Music search",
+        "open_youtube_search": "Open YouTube search",
+        "no_queued_downloads": "No queued downloads.",
+        "no_completed_downloads": "No completed downloads yet.",
+        "no_failed_downloads": "No failed downloads.",
+        "mode": "Mode",
+        "path": "Path",
+        "error_details": "Error details",
+        "partially_downloaded_albums": "Partially downloaded albums",
+        "incomplete_help_1": "This page shows albums that already have some tracks, but are not complete yet.",
+        "incomplete_help_2": "Albums with 0 tracks are ignored because they already appear in Lidarr Wanted / Missing.",
     },
     "nl": {
         "language_name": "Nederlands",
@@ -96,6 +121,28 @@ TRANSLATIONS = {
         "language": "Taal",
         "save": "Instellingen opslaan",
         "back": "Terug",
+        "incomplete_albums": "Onvolledige Albums",
+        "downloads": "Downloads",
+        "completed": "Voltooid",
+        "failed": "Mislukt",
+        "queued": "In Wachtrij",
+        "clear_completed": "Voltooide Wissen",
+        "clear_failed": "Mislukte Wissen",
+        "no_incomplete": "Geen onvolledige albums gevonden.",
+        "partially_downloaded": "Gedeeltelijk gedownloade albums",
+        "tracks_present": "tracks aanwezig",
+        "missing": "ontbrekend",
+        "open_music_search": "Open YouTube Music zoekopdracht",
+        "open_youtube_search": "Open YouTube zoekopdracht",
+        "no_queued_downloads": "Geen downloads in de wachtrij.",
+        "no_completed_downloads": "Nog geen voltooide downloads.",
+        "no_failed_downloads": "Geen mislukte downloads.",
+        "mode": "Modus",
+        "path": "Pad",
+        "error_details": "Foutdetails",
+        "partially_downloaded_albums": "Gedeeltelijk gedownloade albums",
+        "incomplete_help_1": "Deze pagina toont albums waarvan al enkele nummers aanwezig zijn, maar die nog niet compleet zijn.",
+        "incomplete_help_2": "Albums met 0 nummers worden genegeerd omdat deze al zichtbaar zijn in Lidarr Wanted / Missing.",
     },
     "no": {
         "language_name": "Norsk",
@@ -134,6 +181,28 @@ TRANSLATIONS = {
         "language": "Språk",
         "save": "Lagre innstillinger",
         "back": "Tilbake",
+        "incomplete_albums": "Ufullstendige Album",
+        "downloads": "Nedlastinger",
+        "completed": "Fullført",
+        "failed": "Mislykket",
+        "queued": "I Kø",
+        "clear_completed": "Tøm Fullførte",
+        "clear_failed": "Tøm Mislykkede",
+        "no_incomplete": "Ingen ufullstendige album funnet.",
+        "partially_downloaded": "Delvis nedlastede album",
+        "tracks_present": "spor tilgjengelig",
+        "missing": "mangler",
+        "open_music_search": "Åpne YouTube Music-søk",
+        "open_youtube_search": "Åpne YouTube-søk",
+        "no_queued_downloads": "Ingen nedlastinger i kø.",
+        "no_completed_downloads": "Ingen fullførte nedlastinger ennå.",
+        "no_failed_downloads": "Ingen mislykkede nedlastinger.",
+        "mode": "Modus",
+        "path": "Sti",
+        "error_details": "Feildetaljer",
+        "partially_downloaded_albums": "Delvis nedlastede album",
+        "incomplete_help_1": "Denne siden viser album som allerede har noen spor, men som ennå ikke er komplette.",
+        "incomplete_help_2": "Album med 0 spor ignoreres fordi de allerede vises i Lidarr Wanted / Missing.",
     },
 }
 
@@ -141,12 +210,23 @@ TRANSLATIONS = {
 def load_json(path, default):
     if not path.exists():
         return default
-    return json.loads(path.read_text())
 
+    try:
+        content = path.read_text().strip()
+        if not content:
+            return default
+
+        return json.loads(content)
+    except json.JSONDecodeError:
+        return default
 
 def save_json(path, data):
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
 
+def add_download_record(path, record):
+    data = load_json(path, [])
+    data.insert(0, record)
+    save_json(path, data[:200])    
 
 def get_settings():
     settings = load_json(SETTINGS_FILE, {"language": "en"})
@@ -154,10 +234,8 @@ def get_settings():
         settings["language"] = "en"
     return settings
 
-
 def t():
     return TRANSLATIONS[get_settings()["language"]]
-
 
 def get_missing(limit=50):
     r = requests.get(
@@ -167,7 +245,6 @@ def get_missing(limit=50):
     )
     r.raise_for_status()
     return r.json().get("records", [])
-
 
 def yt_search(query):
     cmd = [
@@ -213,6 +290,82 @@ def index():
         lidarr_url=LIDARR_URL
     )
 
+@app.route("/downloads")
+def downloads():
+    queue = load_json(QUEUE_FILE, [])
+    completed = load_json(DOWNLOADS_FILE, [])
+    failed = load_json(FAILED_FILE, [])
+
+    return render_template(
+        "downloads.html",
+        tr=t(),
+        queue=queue,
+        completed=completed,
+        failed=failed,
+        lidarr_url=LIDARR_URL,
+    )
+
+def get_incomplete_albums():
+    r = requests.get(
+        f"{LIDARR_URL}/api/v1/album",
+        headers=HEADERS,
+        timeout=30,
+    )
+    r.raise_for_status()
+
+    albums = []
+
+    for album in r.json():
+        stats = album.get("statistics", {})
+
+        track_count = stats.get("trackCount", 0)
+        file_count = stats.get("trackFileCount", 0)
+
+        if file_count > 0 and file_count < track_count:
+            artist = album.get("artist", {}).get("artistName", "Unknown Artist")
+            title = album.get("title", "Unknown Album")
+            year = (album.get("releaseDate") or "")[:4]
+
+            search_query = f"{artist} {title} {year}"
+            music_search_url = "https://music.youtube.com/search?q=" + requests.utils.quote(search_query)
+            youtube_search_url = "https://www.youtube.com/results?search_query=" + requests.utils.quote(search_query)
+
+            albums.append({
+                "artist": artist,
+                "album": title,
+                "year": year,
+                "track_count": track_count,
+                "file_count": file_count,
+                "missing_count": track_count - file_count,
+                "percent": stats.get("percentOfTracks", 0),
+                "music_search_url": music_search_url,
+                "youtube_search_url": youtube_search_url,
+            })
+
+    return albums
+
+
+@app.route("/incomplete")
+def incomplete():
+    albums = get_incomplete_albums()
+
+    return render_template(
+        "incomplete.html",
+        tr=t(),
+        albums=albums,
+        lidarr_url=LIDARR_URL,
+    )
+
+@app.route("/downloads/clear-completed", methods=["POST"])
+def clear_completed():
+    save_json(DOWNLOADS_FILE, [])
+    return redirect(url_for("downloads"))
+
+
+@app.route("/downloads/clear-failed", methods=["POST"])
+def clear_failed():
+    save_json(FAILED_FILE, [])
+    return redirect(url_for("downloads"))
 
 @app.route("/settings", methods=["GET", "POST"])
 def settings():
@@ -266,7 +419,6 @@ def scan():
     save_json(CACHE_FILE, cache)
     return redirect(url_for("index"))
 
-
 @app.route("/queue", methods=["POST"])
 def add_queue():
     queue = load_json(QUEUE_FILE, [])
@@ -293,6 +445,39 @@ def add_queue():
 
     return redirect(url_for("index"))
 
+@app.route("/queue/remove", methods=["POST"])
+def remove_queue_item():
+    queue = load_json(QUEUE_FILE, [])
+    key = request.form.get("key")
+
+    queue = [item for item in queue if item["key"] != key]
+    save_json(QUEUE_FILE, queue)
+
+    return redirect(url_for("index"))
+
+@app.route("/queue/clear", methods=["POST"])
+def clear_queue():
+    save_json(QUEUE_FILE, [])
+    return redirect(url_for("index"))
+
+@app.route("/queue/move", methods=["POST"])
+def move_queue_item():
+    queue = load_json(QUEUE_FILE, [])
+    key = request.form.get("key")
+    direction = request.form.get("direction")
+
+    index = next((i for i, item in enumerate(queue) if item["key"] == key), None)
+
+    if index is not None:
+        if direction == "up" and index > 0:
+            queue[index - 1], queue[index] = queue[index], queue[index - 1]
+
+        if direction == "down" and index < len(queue) - 1:
+            queue[index + 1], queue[index] = queue[index], queue[index + 1]
+
+    save_json(QUEUE_FILE, queue)
+
+    return redirect(url_for("index"))
 
 @app.route("/download", methods=["POST"])
 def download_queue():
@@ -309,30 +494,57 @@ def download_queue():
         if mode == "playlist":
             output_template = "%(playlist_index,track_number|)02d - %(title)s.%(ext)s"
             cmd = [
-                "yt-dlp", item["url"], "--yes-playlist",
+                "yt-dlp",
+                item["url"],
+                "--yes-playlist",
+                "--ignore-errors",
+                "--no-abort-on-error",
                 "-f", "bestaudio[ext=m4a]/bestaudio/best",
-                "--embed-thumbnail", "--add-metadata",
+                "--embed-thumbnail",
+                "--add-metadata",
                 "-o", str(target / output_template),
             ]
         else:
             cmd = [
-                "yt-dlp", item["url"], "--no-playlist",
+                "yt-dlp",
+                item["url"],
+                "--no-playlist",
                 "-f", "bestaudio[ext=m4a]/bestaudio/best",
-                "--embed-thumbnail", "--add-metadata",
+                "--embed-thumbnail",
+                "--add-metadata",
                 "-o", str(target / "%(title)s.%(ext)s"),
             ]
 
-        result = subprocess.run(cmd)
-        if result.returncode == 0:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+
+        downloaded_files = (
+            list(target.glob("*.m4a")) +
+            list(target.glob("*.mp3")) +
+            list(target.glob("*.opus"))
+        )
+
+        record = {
+            "timestamp": datetime.now().isoformat(),
+            "key": key,
+            "mode": mode,
+            "url": item["url"],
+            "path": str(target),
+            "returncode": result.returncode,
+            "stdout": result.stdout[-4000:],
+            "stderr": result.stderr[-4000:],
+        }
+
+        if result.returncode == 0 or downloaded_files:
             processed.append(key)
+            add_download_record(DOWNLOADS_FILE, record)
         else:
             remaining.append(item)
+            add_download_record(FAILED_FILE, record)
 
     save_json(PROCESSED_FILE, sorted(set(processed)))
     save_json(QUEUE_FILE, remaining)
 
-    return redirect(url_for("index"))
-
+    return redirect(url_for("downloads"))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8999)

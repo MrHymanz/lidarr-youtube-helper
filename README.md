@@ -6,6 +6,7 @@
 A lightweight web application that helps Lidarr users find missing albums on YouTube and YouTube Music, review matches, and download them using yt-dlp.
 
 ## Current Features
+## v0.2.0-alpha
 
 - Scan Lidarr missing albums
 - Review YouTube search results
@@ -15,6 +16,10 @@ A lightweight web application that helps Lidarr users find missing albums on You
 - Download playlists as separate tracks
 - Multi-language UI
 - Docker deployment
+- Queue management
+- Download activity page
+- Failed download tracking
+- Timestamped download history
 
 ## Screenshots
 

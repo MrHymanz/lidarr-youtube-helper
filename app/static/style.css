@@ -176,3 +176,138 @@ code {
   padding: 2px 5px;
   border-radius: 3px;
 }
+
+.queue-actions {
+  margin-bottom: 12px;
+}
+
+.queue-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.queue-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #252525;
+  border: 1px solid #444;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.queue-item-title {
+  flex: 1;
+}
+
+.queue-item-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.queue-item-actions form,
+.queue-actions form {
+  margin: 0;
+}
+
+.status-count {
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-weight: bold;
+  margin-left: 8px;
+}
+
+.status-count.success {
+  background: #00cc7a;
+  color: #111;
+}
+
+.status-count.failed {
+  background: #d9534f;
+  color: #fff;
+}
+
+.download-record {
+  background: #252525;
+  border: 1px solid #444;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.success-border {
+  border-left: 4px solid #00cc7a;
+}
+
+.failed-border {
+  border-left: 4px solid #d9534f;
+}
+
+details {
+  margin-top: 8px;
+}
+
+pre {
+  white-space: pre-wrap;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  padding: 10px;
+  border-radius: 4px;
+  max-height: 300px;
+  overflow: auto;
+  color: #ddd;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.section-header h2 {
+  margin: 0;
+}
+
+.danger-button {
+  background: #d9534f;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.danger-button:hover {
+  background: #c9302c;
+}
+
+.incomplete-record {
+  background: #252525;
+  border: 1px solid #444;
+  border-left: 4px solid #f5a623;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.progress-text {
+  color: var(--muted);
+  margin: 8px 0;
+}
+
+.progress-bar {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #f5a623;
+}

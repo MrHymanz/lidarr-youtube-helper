@@ -19,6 +19,14 @@
           YouTube Helper
       </a>
 
+      <a class="nav" href="/downloads">
+          Downloads
+      </a>
+
+      <a class="nav" href="/incomplete">
+          Incomplete Albums
+      </a>
+
       <a class="nav" href="{{ lidarr_url }}/wanted/missing" target="_blank">
           {{ tr.wanted }}
       </a>
@@ -52,9 +60,39 @@
       <h2>{{ tr.queue }} <span class="queue-count">{{ queue|length }}</span></h2>
 
       {% if queue %}
-        <ul>
+        <div class="queue-actions">
+          <form method="post" action="/queue/clear">
+            <button type="submit">Clear queue</button>
+          </form>
+        </div>
+
+        <ul class="queue-list">
           {% for item in queue %}
-            <li>{{ item.key }} <small>({{ item.mode }})</small></li>
+            <li class="queue-item">
+              <div class="queue-item-title">
+                {{ item.key }}
+                <small>({{ item.mode }})</small>
+              </div>
+
+              <div class="queue-item-actions">
+                <form method="post" action="/queue/move">
+                  <input type="hidden" name="key" value="{{ item.key }}">
+                  <input type="hidden" name="direction" value="up">
+                  <button type="submit">↑</button>
+                </form>
+
+                <form method="post" action="/queue/move">
+                  <input type="hidden" name="key" value="{{ item.key }}">
+                  <input type="hidden" name="direction" value="down">
+                  <button type="submit">↓</button>
+                </form>
+
+                <form method="post" action="/queue/remove">
+                  <input type="hidden" name="key" value="{{ item.key }}">
+                  <button type="submit">Remove</button>
+                </form>
+              </div>
+            </li>
           {% endfor %}
         </ul>
       {% else %}

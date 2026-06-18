@@ -13,6 +13,8 @@ app/cache.json
 app/queue.json
 app/processed.json
 app/settings.json
+app/downloads.json
+app/failed.json
 
 # Logs
 *.log
