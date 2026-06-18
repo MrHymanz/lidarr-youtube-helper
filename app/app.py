@@ -61,6 +61,28 @@ TRANSLATIONS = {
         "language": "Language",
         "save": "Save settings",
         "back": "Back",
+        "incomplete_albums": "Incomplete Albums",
+        "downloads": "Downloads",
+        "completed": "Completed",
+        "failed": "Failed",
+        "queued": "Queued",
+        "clear_completed": "Clear Completed",
+        "clear_failed": "Clear Failed",
+        "no_incomplete": "No incomplete albums found.",
+        "partially_downloaded": "Partially downloaded albums",
+        "tracks_present": "tracks present",
+        "missing": "missing",
+        "open_music_search": "Open YouTube Music search",
+        "open_youtube_search": "Open YouTube search",
+        "no_queued_downloads": "No queued downloads.",
+        "no_completed_downloads": "No completed downloads yet.",
+        "no_failed_downloads": "No failed downloads.",
+        "mode": "Mode",
+        "path": "Path",
+        "error_details": "Error details",
+        "partially_downloaded_albums": "Partially downloaded albums",
+        "incomplete_help_1": "This page shows albums that already have some tracks, but are not complete yet.",
+        "incomplete_help_2": "Albums with 0 tracks are ignored because they already appear in Lidarr Wanted / Missing.",
     },
     "nl": {
         "language_name": "Nederlands",
@@ -99,6 +121,28 @@ TRANSLATIONS = {
         "language": "Taal",
         "save": "Instellingen opslaan",
         "back": "Terug",
+        "incomplete_albums": "Onvolledige Albums",
+        "downloads": "Downloads",
+        "completed": "Voltooid",
+        "failed": "Mislukt",
+        "queued": "In Wachtrij",
+        "clear_completed": "Voltooide Wissen",
+        "clear_failed": "Mislukte Wissen",
+        "no_incomplete": "Geen onvolledige albums gevonden.",
+        "partially_downloaded": "Gedeeltelijk gedownloade albums",
+        "tracks_present": "tracks aanwezig",
+        "missing": "ontbrekend",
+        "open_music_search": "Open YouTube Music zoekopdracht",
+        "open_youtube_search": "Open YouTube zoekopdracht",
+        "no_queued_downloads": "Geen downloads in de wachtrij.",
+        "no_completed_downloads": "Nog geen voltooide downloads.",
+        "no_failed_downloads": "Geen mislukte downloads.",
+        "mode": "Modus",
+        "path": "Pad",
+        "error_details": "Foutdetails",
+        "partially_downloaded_albums": "Gedeeltelijk gedownloade albums",
+        "incomplete_help_1": "Deze pagina toont albums waarvan al enkele nummers aanwezig zijn, maar die nog niet compleet zijn.",
+        "incomplete_help_2": "Albums met 0 nummers worden genegeerd omdat deze al zichtbaar zijn in Lidarr Wanted / Missing.",
     },
     "no": {
         "language_name": "Norsk",
@@ -137,6 +181,28 @@ TRANSLATIONS = {
         "language": "Språk",
         "save": "Lagre innstillinger",
         "back": "Tilbake",
+        "incomplete_albums": "Ufullstendige Album",
+        "downloads": "Nedlastinger",
+        "completed": "Fullført",
+        "failed": "Mislykket",
+        "queued": "I Kø",
+        "clear_completed": "Tøm Fullførte",
+        "clear_failed": "Tøm Mislykkede",
+        "no_incomplete": "Ingen ufullstendige album funnet.",
+        "partially_downloaded": "Delvis nedlastede album",
+        "tracks_present": "spor tilgjengelig",
+        "missing": "mangler",
+        "open_music_search": "Åpne YouTube Music-søk",
+        "open_youtube_search": "Åpne YouTube-søk",
+        "no_queued_downloads": "Ingen nedlastinger i kø.",
+        "no_completed_downloads": "Ingen fullførte nedlastinger ennå.",
+        "no_failed_downloads": "Ingen mislykkede nedlastinger.",
+        "mode": "Modus",
+        "path": "Sti",
+        "error_details": "Feildetaljer",
+        "partially_downloaded_albums": "Delvis nedlastede album",
+        "incomplete_help_1": "Denne siden viser album som allerede har noen spor, men som ennå ikke er komplette.",
+        "incomplete_help_2": "Album med 0 spor ignoreres fordi de allerede vises i Lidarr Wanted / Missing.",
     },
 }
 
@@ -236,6 +302,57 @@ def downloads():
         queue=queue,
         completed=completed,
         failed=failed,
+        lidarr_url=LIDARR_URL,
+    )
+
+def get_incomplete_albums():
+    r = requests.get(
+        f"{LIDARR_URL}/api/v1/album",
+        headers=HEADERS,
+        timeout=30,
+    )
+    r.raise_for_status()
+
+    albums = []
+
+    for album in r.json():
+        stats = album.get("statistics", {})
+
+        track_count = stats.get("trackCount", 0)
+        file_count = stats.get("trackFileCount", 0)
+
+        if file_count > 0 and file_count < track_count:
+            artist = album.get("artist", {}).get("artistName", "Unknown Artist")
+            title = album.get("title", "Unknown Album")
+            year = (album.get("releaseDate") or "")[:4]
+
+            search_query = f"{artist} {title} {year}"
+            music_search_url = "https://music.youtube.com/search?q=" + requests.utils.quote(search_query)
+            youtube_search_url = "https://www.youtube.com/results?search_query=" + requests.utils.quote(search_query)
+
+            albums.append({
+                "artist": artist,
+                "album": title,
+                "year": year,
+                "track_count": track_count,
+                "file_count": file_count,
+                "missing_count": track_count - file_count,
+                "percent": stats.get("percentOfTracks", 0),
+                "music_search_url": music_search_url,
+                "youtube_search_url": youtube_search_url,
+            })
+
+    return albums
+
+
+@app.route("/incomplete")
+def incomplete():
+    albums = get_incomplete_albums()
+
+    return render_template(
+        "incomplete.html",
+        tr=t(),
+        albums=albums,
         lidarr_url=LIDARR_URL,
     )
 

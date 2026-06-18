@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Downloads - {{ tr.title }}</title>
+  <title>{{ tr.downloads }} - {{ tr.title }}</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 
@@ -13,16 +13,17 @@
     <div class="logo">◉ Lidarr Helper</div>
     <a class="nav" href="{{ lidarr_url }}" target="_blank">{{ tr.library }}</a>
     <a class="nav" href="/">YouTube Helper</a>
-    <a class="nav active" href="/downloads">Downloads</a>
+    <a class="nav active" href="/downloads">{{ tr.downloads }}</a>
+    <a class="nav" href="/incomplete">{{ tr.incomplete_albums }}</a>
     <a class="nav" href="{{ lidarr_url }}/wanted/missing" target="_blank">{{ tr.wanted }}</a>
     <a class="nav" href="/settings">{{ tr.settings }}</a>
   </aside>
 
   <main class="content">
-    <h1>Downloads</h1>
+    <h1>{{ tr.downloads }}</h1>
 
     <div class="card">
-      <h2>Queued <span class="queue-count">{{ queue|length }}</span></h2>
+      <h2>{{ tr.queued }} <span class="queue-count">{{ queue|length }}</span></h2>
 
       {% if queue %}
         <ul class="queue-list">
@@ -36,78 +37,62 @@
           {% endfor %}
         </ul>
       {% else %}
-        <p class="muted">No queued downloads.</p>
+        <p class="muted">{{ tr.no_queued_downloads }}</p>
       {% endif %}
     </div>
 
     <div class="card">
       <div class="section-header">
-    <h2>
-        Completed
-        <span class="status-count success">{{ completed|length }}</span>
-    </h2>
+        <h2>{{ tr.completed }} <span class="status-count success">{{ completed|length }}</span></h2>
 
-    {% if completed %}
-    <form method="post" action="/downloads/clear-completed">
-        <button class="danger-button" type="submit">
-            Clear Completed
-        </button>
-    </form>
-    {% endif %}
-    </div>
+        {% if completed %}
+        <form method="post" action="/downloads/clear-completed">
+          <button class="danger-button" type="submit">{{ tr.clear_completed }}</button>
+        </form>
+        {% endif %}
+      </div>
 
       {% if completed %}
         {% for item in completed %}
           <div class="download-record success-border">
-            <strong>{{ item.key }}</strong>
-            <br>
-            <small>Mode: {{ item.mode }}</small><br>
-            <small>Path: {{ item.path }}</small><br>
-            <small>
-              {{ item.timestamp.replace('T', ' ')[:19] }}
-            </small>
+            <strong>{{ item.key }}</strong><br>
+            <small>{{ tr.mode }}: {{ item.mode }}</small><br>
+            <small>{{ tr.path }}: {{ item.path }}</small><br>
+            <small>{{ item.timestamp.replace('T', ' ')[:19] }}</small>
           </div>
         {% endfor %}
       {% else %}
-        <p class="muted">No completed downloads yet.</p>
+        <p class="muted">{{ tr.no_completed_downloads }}</p>
       {% endif %}
     </div>
 
     <div class="card">
-        <div class="section-header">
-      <h2>
-          Failed
-          <span class="status-count failed">{{ failed|length }}</span>
-      </h2>
+      <div class="section-header">
+        <h2>{{ tr.failed }} <span class="status-count failed">{{ failed|length }}</span></h2>
 
-      {% if failed %}
-      <form method="post" action="/downloads/clear-failed">
-          <button class="danger-button" type="submit">
-              Clear Failed
-          </button>
-      </form>
-      {% endif %}
-    </div>
+        {% if failed %}
+        <form method="post" action="/downloads/clear-failed">
+          <button class="danger-button" type="submit">{{ tr.clear_failed }}</button>
+        </form>
+        {% endif %}
+      </div>
 
       {% if failed %}
         {% for item in failed %}
           <div class="download-record failed-border">
-            <strong>{{ item.key }}</strong>
-            <br>
-            <small>Mode: {{ item.mode }}</small><br>
+            <strong>{{ item.key }}</strong><br>
+            <small>{{ tr.mode }}: {{ item.mode }}</small><br>
             <small>URL: {{ item.url }}</small><br>
-            <small>
-              {{ item.timestamp.replace('T', ' ')[:19] }}
-            </small>
+            <small>{{ item.timestamp.replace('T', ' ')[:19] }}</small>
 
             <details>
-              <summary>Error details</summary>
+              <summary>{{ tr.error_details }}</summary>
               <pre>{{ item.stderr or item.stdout }}</pre>
             </details>
           </div>
         {% endfor %}
       {% else %}
-        <p class="muted">No failed downloads.</p>
+        <p class="muted">{{ tr.no_failed_downloads }}</p>
       {% endif %}
     </div>
   </main>
