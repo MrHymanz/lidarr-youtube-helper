@@ -210,3 +210,51 @@ code {
 .queue-actions form {
   margin: 0;
 }
+
+.status-count {
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-weight: bold;
+  margin-left: 8px;
+}
+
+.status-count.success {
+  background: #00cc7a;
+  color: #111;
+}
+
+.status-count.failed {
+  background: #d9534f;
+  color: #fff;
+}
+
+.download-record {
+  background: #252525;
+  border: 1px solid #444;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.success-border {
+  border-left: 4px solid #00cc7a;
+}
+
+.failed-border {
+  border-left: 4px solid #d9534f;
+}
+
+details {
+  margin-top: 8px;
+}
+
+pre {
+  white-space: pre-wrap;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  padding: 10px;
+  border-radius: 4px;
+  max-height: 300px;
+  overflow: auto;
+  color: #ddd;
+}

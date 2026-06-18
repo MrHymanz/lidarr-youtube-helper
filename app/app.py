@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 from pathlib import Path
+from datetime import datetime
 
 import requests
 from flask import Flask, redirect, render_template, request, url_for
@@ -16,6 +17,8 @@ QUEUE_FILE = Path("/app/queue.json")
 PROCESSED_FILE = Path("/app/processed.json")
 CACHE_FILE = Path("/app/cache.json")
 SETTINGS_FILE = Path("/app/settings.json")
+DOWNLOADS_FILE = Path("/app/downloads.json")
+FAILED_FILE = Path("/app/failed.json")
 
 HEADERS = {"X-Api-Key": LIDARR_API_KEY}
 
@@ -141,12 +144,23 @@ TRANSLATIONS = {
 def load_json(path, default):
     if not path.exists():
         return default
-    return json.loads(path.read_text())
 
+    try:
+        content = path.read_text().strip()
+        if not content:
+            return default
+
+        return json.loads(content)
+    except json.JSONDecodeError:
+        return default
 
 def save_json(path, data):
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
 
+def add_download_record(path, record):
+    data = load_json(path, [])
+    data.insert(0, record)
+    save_json(path, data[:200])    
 
 def get_settings():
     settings = load_json(SETTINGS_FILE, {"language": "en"})
@@ -154,10 +168,8 @@ def get_settings():
         settings["language"] = "en"
     return settings
 
-
 def t():
     return TRANSLATIONS[get_settings()["language"]]
-
 
 def get_missing(limit=50):
     r = requests.get(
@@ -167,7 +179,6 @@ def get_missing(limit=50):
     )
     r.raise_for_status()
     return r.json().get("records", [])
-
 
 def yt_search(query):
     cmd = [
@@ -213,6 +224,20 @@ def index():
         lidarr_url=LIDARR_URL
     )
 
+@app.route("/downloads")
+def downloads():
+    queue = load_json(QUEUE_FILE, [])
+    completed = load_json(DOWNLOADS_FILE, [])
+    failed = load_json(FAILED_FILE, [])
+
+    return render_template(
+        "downloads.html",
+        tr=t(),
+        queue=queue,
+        completed=completed,
+        failed=failed,
+        lidarr_url=LIDARR_URL,
+    )
 
 @app.route("/settings", methods=["GET", "POST"])
 def settings():
@@ -266,7 +291,6 @@ def scan():
     save_json(CACHE_FILE, cache)
     return redirect(url_for("index"))
 
-
 @app.route("/queue", methods=["POST"])
 def add_queue():
     queue = load_json(QUEUE_FILE, [])
@@ -303,12 +327,10 @@ def remove_queue_item():
 
     return redirect(url_for("index"))
 
-
 @app.route("/queue/clear", methods=["POST"])
 def clear_queue():
     save_json(QUEUE_FILE, [])
     return redirect(url_for("index"))
-
 
 @app.route("/queue/move", methods=["POST"])
 def move_queue_item():
@@ -329,7 +351,6 @@ def move_queue_item():
 
     return redirect(url_for("index"))
 
-
 @app.route("/download", methods=["POST"])
 def download_queue():
     queue = load_json(QUEUE_FILE, [])
@@ -344,7 +365,6 @@ def download_queue():
 
         if mode == "playlist":
             output_template = "%(playlist_index,track_number|)02d - %(title)s.%(ext)s"
-
             cmd = [
                 "yt-dlp",
                 item["url"],
@@ -367,7 +387,7 @@ def download_queue():
                 "-o", str(target / "%(title)s.%(ext)s"),
             ]
 
-        result = subprocess.run(cmd)
+        result = subprocess.run(cmd, capture_output=True, text=True)
 
         downloaded_files = (
             list(target.glob("*.m4a")) +
@@ -375,16 +395,28 @@ def download_queue():
             list(target.glob("*.opus"))
         )
 
+        record = {
+            "timestamp": datetime.now().isoformat(),
+            "key": key,
+            "mode": mode,
+            "url": item["url"],
+            "path": str(target),
+            "returncode": result.returncode,
+            "stdout": result.stdout[-4000:],
+            "stderr": result.stderr[-4000:],
+        }
+
         if result.returncode == 0 or downloaded_files:
             processed.append(key)
+            add_download_record(DOWNLOADS_FILE, record)
         else:
             remaining.append(item)
+            add_download_record(FAILED_FILE, record)
 
     save_json(PROCESSED_FILE, sorted(set(processed)))
     save_json(QUEUE_FILE, remaining)
 
-    return redirect(url_for("index"))
-
+    return redirect(url_for("downloads"))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8999)

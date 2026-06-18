@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Downloads - {{ tr.title }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="logo">◉ Lidarr Helper</div>
+    <a class="nav" href="{{ lidarr_url }}" target="_blank">{{ tr.library }}</a>
+    <a class="nav" href="/">YouTube Helper</a>
+    <a class="nav active" href="/downloads">Downloads</a>
+    <a class="nav" href="{{ lidarr_url }}/wanted/missing" target="_blank">{{ tr.wanted }}</a>
+    <a class="nav" href="/settings">{{ tr.settings }}</a>
+  </aside>
+
+  <main class="content">
+    <h1>Downloads</h1>
+
+    <div class="card">
+      <h2>Queued <span class="queue-count">{{ queue|length }}</span></h2>
+
+      {% if queue %}
+        <ul class="queue-list">
+          {% for item in queue %}
+            <li class="queue-item">
+              <div class="queue-item-title">
+                {{ item.key }}
+                <small>({{ item.mode }})</small>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">No queued downloads.</p>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Completed <span class="status-count success">{{ completed|length }}</span></h2>
+
+      {% if completed %}
+        {% for item in completed %}
+          <div class="download-record success-border">
+            <strong>{{ item.key }}</strong>
+            <br>
+            <small>Mode: {{ item.mode }}</small><br>
+            <small>Path: {{ item.path }}</small><br>
+            <small>
+              {{ item.timestamp.replace('T', ' ')[:19] }}
+            </small>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="muted">No completed downloads yet.</p>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Failed <span class="status-count failed">{{ failed|length }}</span></h2>
+
+      {% if failed %}
+        {% for item in failed %}
+          <div class="download-record failed-border">
+            <strong>{{ item.key }}</strong>
+            <br>
+            <small>Mode: {{ item.mode }}</small><br>
+            <small>URL: {{ item.url }}</small><br>
+            <small>
+              {{ item.timestamp.replace('T', ' ')[:19] }}
+            </small>
+
+            <details>
+              <summary>Error details</summary>
+              <pre>{{ item.stderr or item.stdout }}</pre>
+            </details>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="muted">No failed downloads.</p>
+      {% endif %}
+    </div>
+  </main>
+
+</div>
+</body>
+</html>
