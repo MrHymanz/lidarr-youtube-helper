@@ -239,6 +239,17 @@ def downloads():
         lidarr_url=LIDARR_URL,
     )
 
+@app.route("/downloads/clear-completed", methods=["POST"])
+def clear_completed():
+    save_json(DOWNLOADS_FILE, [])
+    return redirect(url_for("downloads"))
+
+
+@app.route("/downloads/clear-failed", methods=["POST"])
+def clear_failed():
+    save_json(FAILED_FILE, [])
+    return redirect(url_for("downloads"))
+
 @app.route("/settings", methods=["GET", "POST"])
 def settings():
     current = get_settings()

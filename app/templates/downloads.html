@@ -41,7 +41,20 @@
     </div>
 
     <div class="card">
-      <h2>Completed <span class="status-count success">{{ completed|length }}</span></h2>
+      <div class="section-header">
+    <h2>
+        Completed
+        <span class="status-count success">{{ completed|length }}</span>
+    </h2>
+
+    {% if completed %}
+    <form method="post" action="/downloads/clear-completed">
+        <button class="danger-button" type="submit">
+            Clear Completed
+        </button>
+    </form>
+    {% endif %}
+    </div>
 
       {% if completed %}
         {% for item in completed %}
@@ -61,7 +74,20 @@
     </div>
 
     <div class="card">
-      <h2>Failed <span class="status-count failed">{{ failed|length }}</span></h2>
+        <div class="section-header">
+      <h2>
+          Failed
+          <span class="status-count failed">{{ failed|length }}</span>
+      </h2>
+
+      {% if failed %}
+      <form method="post" action="/downloads/clear-failed">
+          <button class="danger-button" type="submit">
+              Clear Failed
+          </button>
+      </form>
+      {% endif %}
+    </div>
 
       {% if failed %}
         {% for item in failed %}
