@@ -311,3 +311,57 @@ pre {
   height: 100%;
   background: #f5a623;
 }
+
+.track-record {
+  background: #252525;
+  border: 1px solid #444;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.track-record .search-links {
+  margin-top: 8px;
+}
+
+.clickable-record {
+  display: block;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.clickable-record:hover {
+  background: #2d2d2d;
+  text-decoration: none;
+}
+
+.record-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.record-arrow {
+  font-size: 28px;
+  color: var(--accent);
+}
+
+.clickable-record {
+  cursor: pointer;
+  color: var(--text);
+}
+
+.clickable-record:hover {
+  background: #2d2d2d;
+}
+
+.record-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.record-arrow {
+  font-size: 28px;
+  color: var(--accent);
+}
