@@ -83,6 +83,11 @@ TRANSLATIONS = {
         "partially_downloaded_albums": "Partially downloaded albums",
         "incomplete_help_1": "This page shows albums that already have some tracks, but are not complete yet.",
         "incomplete_help_2": "Albums with 0 tracks are ignored because they already appear in Lidarr Wanted / Missing.",
+        "tracks": "Tracks",
+        "track_status": "Track status",
+        "track_status_help_1": "This page shows which tracks Lidarr already has and which tracks are missing.",
+        "track_status_help_2": "Missing tracks include YouTube and YouTube Music search links.",
+        "back_to_incomplete_albums": "Back to incomplete albums",
     },
     "nl": {
         "language_name": "Nederlands",
@@ -143,6 +148,11 @@ TRANSLATIONS = {
         "partially_downloaded_albums": "Gedeeltelijk gedownloade albums",
         "incomplete_help_1": "Deze pagina toont albums waarvan al enkele nummers aanwezig zijn, maar die nog niet compleet zijn.",
         "incomplete_help_2": "Albums met 0 nummers worden genegeerd omdat deze al zichtbaar zijn in Lidarr Wanted / Missing.",
+        "tracks": "Nummers",
+        "track_status": "Trackstatus",
+        "track_status_help_1": "Deze pagina toont welke nummers Lidarr al heeft en welke nummers nog ontbreken.",
+        "track_status_help_2": "Ontbrekende nummers bevatten directe zoeklinks naar YouTube en YouTube Music.",
+        "back_to_incomplete_albums": "Terug naar onvolledige albums",
     },
     "no": {
         "language_name": "Norsk",
@@ -203,6 +213,11 @@ TRANSLATIONS = {
         "partially_downloaded_albums": "Delvis nedlastede album",
         "incomplete_help_1": "Denne siden viser album som allerede har noen spor, men som ennå ikke er komplette.",
         "incomplete_help_2": "Album med 0 spor ignoreres fordi de allerede vises i Lidarr Wanted / Missing.",
+        "tracks": "Spor",
+        "track_status": "Sporstatus",
+        "track_status_help_1": "Denne siden viser hvilke spor Lidarr allerede har og hvilke som mangler.",
+        "track_status_help_2": "Manglende spor inkluderer søkelenker til YouTube og YouTube Music.",
+        "back_to_incomplete_albums": "Tilbake til ufullstendige album",
     },
 }
 
@@ -331,6 +346,7 @@ def get_incomplete_albums():
             youtube_search_url = "https://www.youtube.com/results?search_query=" + requests.utils.quote(search_query)
 
             albums.append({
+                "id": album.get("id"),
                 "artist": artist,
                 "album": title,
                 "year": year,
@@ -385,7 +401,71 @@ def settings():
         languages=TRANSLATIONS,
         lidarr_url=LIDARR_URL
     )
+def get_album_details(album_id):
+    albums = requests.get(
+        f"{LIDARR_URL}/api/v1/album",
+        headers=HEADERS,
+        timeout=30,
+    )
+    albums.raise_for_status()
 
+    album = next(
+        (a for a in albums.json() if str(a.get("id")) == str(album_id)),
+        None,
+    )
+
+    if not album:
+        return None, []
+
+    tracks = requests.get(
+        f"{LIDARR_URL}/api/v1/track?albumId={album_id}",
+        headers=HEADERS,
+        timeout=30,
+    )
+    tracks.raise_for_status()
+
+    return album, tracks.json()
+
+
+@app.route("/album/<album_id>")
+def album_details(album_id):
+    album, tracks = get_album_details(album_id)
+
+    if not album:
+        return "Album not found", 404
+
+    artist = album.get("artist", {}).get("artistName", "Unknown Artist")
+    album_title = album.get("title", "Unknown Album")
+
+    formatted_tracks = []
+
+    for track in tracks:
+        title = track.get("title", "Unknown Track")
+        track_number = track.get("trackNumber", "")
+        has_file = bool(track.get("trackFileId"))
+
+        search_query = f"{artist} {title}"
+
+        formatted_tracks.append({
+            "title": title,
+            "track_number": track_number,
+            "has_file": has_file,
+            "music_search_url":
+                "https://music.youtube.com/search?q=" +
+                requests.utils.quote(search_query),
+            "youtube_search_url":
+                "https://www.youtube.com/results?search_query=" +
+                requests.utils.quote(search_query),
+        })
+
+    return render_template(
+        "album.html",
+        tr=t(),
+        artist=artist,
+        album_title=album_title,
+        tracks=formatted_tracks,
+        lidarr_url=LIDARR_URL,
+    )
 
 @app.route("/scan", methods=["POST"])
 def scan():
