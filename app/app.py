@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import difflib
 from pathlib import Path
 from datetime import datetime
 
@@ -90,6 +91,19 @@ TRANSLATIONS = {
         "back_to_incomplete_albums": "Back to incomplete albums",
         "manual_track_url": "Paste YouTube / YouTube Music track URL",
         "add_track_to_queue": "Add track to queue",
+        "import_preview": "Import Preview",
+        "manual_track_url": "Paste YouTube / YouTube Music track URL",
+        "add_track_to_queue": "Add track to queue",
+        "import_preview": "Import Preview",
+        "import_preview_help": "This page checks where downloaded tracks could be imported before moving anything.",
+        "source_folder": "Source folder",
+        "source_found": "Source folder found.",
+        "source_not_found": "Source folder not found.",
+        "target_candidates": "Target candidates",
+        "match_score": "Match score",
+        "auto_selected_target": "Only one target folder was found. This folder would be used automatically.",
+        "no_target_candidates": "No target folders found.",
+        "back": "Back",
     },
     "nl": {
         "language_name": "Nederlands",
@@ -157,6 +171,19 @@ TRANSLATIONS = {
         "back_to_incomplete_albums": "Terug naar onvolledige albums",
         "manual_track_url": "Plak YouTube / YouTube Music track-URL",
         "add_track_to_queue": "Track toevoegen aan queue",
+        "import_preview": "Importvoorbeeld",
+        "manual_track_url": "Plak YouTube / YouTube Music track-URL",
+        "add_track_to_queue": "Track toevoegen aan queue",
+        "import_preview": "Importvoorbeeld",
+        "import_preview_help": "Deze pagina controleert waar gedownloade nummers geïmporteerd kunnen worden voordat er iets wordt verplaatst.",
+        "source_folder": "Bronmap",
+        "source_found": "Bronmap gevonden.",
+        "source_not_found": "Bronmap niet gevonden.",
+        "target_candidates": "Doelmap-kandidaten",
+        "match_score": "Matchscore",
+        "auto_selected_target": "Er is maar één doelmap gevonden. Deze map zou automatisch gebruikt worden.",
+        "no_target_candidates": "Geen doelmappen gevonden.",
+        "back": "Terug",
     },
     "no": {
         "language_name": "Norsk",
@@ -224,6 +251,17 @@ TRANSLATIONS = {
         "back_to_incomplete_albums": "Tilbake til ufullstendige album",
         "manual_track_url": "Lim inn YouTube / YouTube Music spor-URL",
         "add_track_to_queue": "Legg spor i kø",
+        "import_preview": "Importforhåndsvisning",
+        "manual_track_url": "Lim inn YouTube / YouTube Music spor-URL",
+        "add_track_to_queue": "Legg spor til i kø",
+        "import_preview_help": "Denne siden sjekker hvor nedlastede spor kan importeres før noe flyttes.",
+        "source_folder": "Kildemappe",
+        "source_found": "Kildemappe funnet.",
+        "source_not_found": "Kildemappe ikke funnet.",
+        "target_candidates": "Målmappekandidater",
+        "match_score": "Treffscore",
+        "auto_selected_target": "Bare én målmappe ble funnet. Denne ville blitt brukt automatisk.",
+        "no_target_candidates": "Ingen målmapper funnet.",
     },
 }
 
@@ -290,6 +328,59 @@ def yt_search(query):
             pass
     return items
 
+def get_artist_by_id(artist_id):
+    r = requests.get(
+        f"{LIDARR_URL}/api/v1/artist",
+        headers=HEADERS,
+        timeout=30,
+    )
+    r.raise_for_status()
+
+    return next(
+        (artist for artist in r.json() if artist.get("id") == artist_id),
+        None,
+    )
+
+
+def find_album_target_candidates(album):
+    artist = album.get("artist") or get_artist_by_id(album.get("artistId"))
+
+    if not artist:
+        return []
+
+    artist_path = Path(artist.get("path", ""))
+    album_title = album.get("title", "")
+    release_year = (album.get("releaseDate") or "")[:4]
+
+    if not artist_path.exists():
+        return []
+
+    folders = [p for p in artist_path.iterdir() if p.is_dir()]
+
+    search_names = [
+        album_title,
+        f"{album_title} ({release_year})" if release_year else album_title,
+        f"{artist.get('artistName')} - {album_title}",
+    ]
+
+    scored = []
+
+    for folder in folders:
+        folder_name = folder.name.lower()
+
+        score = max(
+            difflib.SequenceMatcher(None, folder_name, name.lower()).ratio()
+            for name in search_names
+        )
+
+        if album_title.lower() in folder_name or score > 0.55:
+            scored.append({
+                "path": str(folder),
+                "name": folder.name,
+                "score": round(score * 100, 1),
+            })
+
+    return sorted(scored, key=lambda item: item["score"], reverse=True)
 
 @app.route("/")
 def index():
@@ -471,9 +562,35 @@ def album_details(album_id):
     return render_template(
         "album.html",
         tr=t(),
+        album=album,
         artist=artist,
         album_title=album_title,
         tracks=formatted_tracks,
+        lidarr_url=LIDARR_URL,
+    )
+
+@app.route("/album/<album_id>/import-preview")
+def album_import_preview(album_id):
+    album, tracks = get_album_details(album_id)
+
+    if not album:
+        return "Album not found", 404
+
+    artist = album.get("artist", {}).get("artistName", "Unknown Artist")
+    album_title = album.get("title", "Unknown Album")
+
+    source_path = DOWNLOAD_DIR / f"{artist} - {album_title}"
+    candidates = find_album_target_candidates(album)
+
+    return render_template(
+        "import_preview.html",
+        tr=t(),
+        album=album,
+        artist=artist,
+        album_title=album_title,
+        source_path=str(source_path),
+        source_exists=source_path.exists(),
+        candidates=candidates,
         lidarr_url=LIDARR_URL,
     )
 

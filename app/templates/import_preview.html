@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ tr.import_preview }} - {{ tr.title }}</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="logo">◉ Lidarr Helper</div>
+        <a class="nav" href="{{ lidarr_url }}" target="_blank"
+          >{{ tr.library }}</a
+        >
+        <a class="nav" href="/">YouTube Helper</a>
+        <a class="nav" href="/downloads">{{ tr.downloads }}</a>
+        <a class="nav active" href="/incomplete">{{ tr.incomplete_albums }}</a>
+        <a class="nav" href="{{ lidarr_url }}/wanted/missing" target="_blank"
+          >{{ tr.wanted }}</a
+        >
+        <a class="nav" href="/settings">{{ tr.settings }}</a>
+      </aside>
+
+      <main class="content">
+        <h1>{{ artist }} - {{ album_title }}</h1>
+
+        <div class="card help-box">
+          <h3>{{ tr.import_preview }}</h3>
+          <p>{{ tr.import_preview_help }}</p>
+        </div>
+
+        <div class="card">
+          <h2>{{ tr.source_folder }}</h2>
+          <p><code>{{ source_path }}</code></p>
+
+          {% if source_exists %}
+          <p class="status-success">{{ tr.source_found }}</p>
+          {% else %}
+          <p class="status-failed">{{ tr.source_not_found }}</p>
+          {% endif %}
+        </div>
+
+        <div class="card">
+          <h2>
+            {{ tr.target_candidates }}
+            <span class="queue-count">{{ candidates|length }}</span>
+          </h2>
+
+          {% if candidates %} {% for candidate in candidates %}
+          <div class="download-record">
+            <strong>{{ candidate.name }}</strong><br />
+            <small>{{ candidate.path }}</small><br />
+            <small>{{ tr.match_score }}: {{ candidate.score }}%</small>
+
+            {% if candidates|length == 1 %}
+            <p class="status-success">{{ tr.auto_selected_target }}</p>
+            {% endif %}
+          </div>
+          {% endfor %} {% else %}
+          <p class="muted">{{ tr.no_target_candidates }}</p>
+          {% endif %}
+        </div>
+
+        <a class="button-link" href="/album/{{ album.id }}">{{ tr.back }}</a>
+      </main>
+    </div>
+  </body>
+</html>
