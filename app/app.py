@@ -88,6 +88,8 @@ TRANSLATIONS = {
         "track_status_help_1": "This page shows which tracks Lidarr already has and which tracks are missing.",
         "track_status_help_2": "Missing tracks include YouTube and YouTube Music search links.",
         "back_to_incomplete_albums": "Back to incomplete albums",
+        "manual_track_url": "Paste YouTube / YouTube Music track URL",
+        "add_track_to_queue": "Add track to queue",
     },
     "nl": {
         "language_name": "Nederlands",
@@ -153,6 +155,8 @@ TRANSLATIONS = {
         "track_status_help_1": "Deze pagina toont welke nummers Lidarr al heeft en welke nummers nog ontbreken.",
         "track_status_help_2": "Ontbrekende nummers bevatten directe zoeklinks naar YouTube en YouTube Music.",
         "back_to_incomplete_albums": "Terug naar onvolledige albums",
+        "manual_track_url": "Plak YouTube / YouTube Music track-URL",
+        "add_track_to_queue": "Track toevoegen aan queue",
     },
     "no": {
         "language_name": "Norsk",
@@ -218,6 +222,8 @@ TRANSLATIONS = {
         "track_status_help_1": "Denne siden viser hvilke spor Lidarr allerede har og hvilke som mangler.",
         "track_status_help_2": "Manglende spor inkluderer søkelenker til YouTube og YouTube Music.",
         "back_to_incomplete_albums": "Tilbake til ufullstendige album",
+        "manual_track_url": "Lim inn YouTube / YouTube Music spor-URL",
+        "add_track_to_queue": "Legg spor i kø",
     },
 }
 
@@ -437,6 +443,9 @@ def album_details(album_id):
     artist = album.get("artist", {}).get("artistName", "Unknown Artist")
     album_title = album.get("title", "Unknown Album")
 
+    queue = load_json(QUEUE_FILE, [])
+    queued_keys = {q.get("key") for q in queue}
+
     formatted_tracks = []
 
     for track in tracks:
@@ -445,17 +454,18 @@ def album_details(album_id):
         has_file = bool(track.get("trackFileId"))
 
         search_query = f"{artist} {title}"
+        music_search_url = "https://music.youtube.com/search?q=" + requests.utils.quote(search_query)
+        youtube_search_url = "https://www.youtube.com/results?search_query=" + requests.utils.quote(search_query)
+
+        queue_key = f"{artist} - {album_title} - {title}"
 
         formatted_tracks.append({
             "title": title,
             "track_number": track_number,
             "has_file": has_file,
-            "music_search_url":
-                "https://music.youtube.com/search?q=" +
-                requests.utils.quote(search_query),
-            "youtube_search_url":
-                "https://www.youtube.com/results?search_query=" +
-                requests.utils.quote(search_query),
+            "is_queued": queue_key in queued_keys,
+            "music_search_url": music_search_url,
+            "youtube_search_url": youtube_search_url,
         })
 
     return render_template(
@@ -559,6 +569,34 @@ def move_queue_item():
 
     return redirect(url_for("index"))
 
+@app.route("/track/queue", methods=["POST"])
+def add_missing_track_to_queue():
+    queue = load_json(QUEUE_FILE, [])
+
+    artist = request.form.get("artist", "").strip()
+    album = request.form.get("album", "").strip()
+    track = request.form.get("track", "").strip()
+    url = request.form.get("url", "").strip()
+
+    if not url:
+        return redirect(request.referrer or url_for("incomplete"))
+
+    album_key = f"{artist} - {album}"
+    queue_key = f"{artist} - {album} - {track}"
+
+    if not any(q["key"] == queue_key for q in queue):
+        queue.append({
+            "key": queue_key,
+            "target": album_key,
+            "artist": artist,
+            "album": album,
+            "url": url,
+            "mode": "video",
+        })
+        save_json(QUEUE_FILE, queue)
+
+    return redirect(request.referrer or url_for("downloads"))
+
 @app.route("/download", methods=["POST"])
 def download_queue():
     queue = load_json(QUEUE_FILE, [])
@@ -568,7 +606,7 @@ def download_queue():
     for item in queue:
         key = item["key"]
         mode = item.get("mode", "video")
-        target = DOWNLOAD_DIR / key
+        target = DOWNLOAD_DIR / item.get("target", key)
         target.mkdir(parents=True, exist_ok=True)
 
         if mode == "playlist":

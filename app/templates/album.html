@@ -1,65 +1,90 @@
 <!doctype html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <title>{{ artist }} - {{ album_title }}</title>
-  <link rel="stylesheet" href="/static/style.css">
-</head>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ artist }} - {{ album_title }}</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
 
-<body>
-<div class="layout">
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="logo">◉ Lidarr Helper</div>
+        <a class="nav" href="{{ lidarr_url }}" target="_blank"
+          >{{ tr.library }}</a
+        >
+        <a class="nav" href="/">YouTube Helper</a>
+        <a class="nav" href="/downloads">{{ tr.downloads }}</a>
+        <a class="nav active" href="/incomplete">{{ tr.incomplete_albums }}</a>
+        <a class="nav" href="{{ lidarr_url }}/wanted/missing" target="_blank"
+          >{{ tr.wanted }}</a
+        >
+        <a class="nav" href="/settings">{{ tr.settings }}</a>
+      </aside>
 
-  <aside class="sidebar">
-    <div class="logo">◉ Lidarr Helper</div>
-    <a class="nav" href="{{ lidarr_url }}" target="_blank">{{ tr.library }}</a>
-    <a class="nav" href="/">YouTube Helper</a>
-    <a class="nav" href="/downloads">{{ tr.downloads }}</a>
-    <a class="nav active" href="/incomplete">{{ tr.incomplete_albums }}</a>
-    <a class="nav" href="{{ lidarr_url }}/wanted/missing" target="_blank">{{ tr.wanted }}</a>
-    <a class="nav" href="/settings">{{ tr.settings }}</a>
-  </aside>
+      <main class="content">
+        <h1>{{ artist }} - {{ album_title }}</h1>
 
-  <main class="content">
-    <h1>{{ artist }} - {{ album_title }}</h1>
+        <div class="card help-box">
+          <h3>{{ tr.track_status }}</h3>
+          <p>{{ tr.track_status_help_1 }}</p>
+          <p>{{ tr.track_status_help_2 }}</p>
+        </div>
 
-    <div class="card help-box">
-        <h3>{{ tr.track_status }}</h3>
-        <p>{{ tr.track_status_help_1 }}</p>
-        <p>{{ tr.track_status_help_2 }}</p>
-    </div>
+        <div class="card">
+          <h2>{{ tr.tracks }}</h2>
 
-    <div class="card">
-      <h2>{{ tr.tracks }}</h2>
+          {% for track in tracks %}
+          <div
+            class="track-record {% if track.has_file %}success-border{% else %}failed-border{% endif %}"
+          >
+            <strong>
+              {% if track.has_file %} ✓ {% elif track.is_queued %} ⏳ {% else %}
+              ✗ {% endif %} {{ track.track_number }} - {{ track.title }}
+            </strong>
 
-      {% for track in tracks %}
-        <div class="track-record {% if track.has_file %}success-border{% else %}failed-border{% endif %}">
-          <strong>
-            {% if track.has_file %}
-              ✓
-            {% else %}
-              ✗
-            {% endif %}
-            {{ track.track_number }} - {{ track.title }}
-          </strong>
-
-          {% if not track.has_file %}
+            {% if track.is_queued and not track.has_file %}
+            <small class="queued-label">Queued</small>
+            {% endif %} {% if not track.has_file %}
             <div class="search-links">
-              <a href="{{ track.music_search_url }}" target="_blank" rel="noopener noreferrer">
+              <a
+                href="{{ track.music_search_url }}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Open YouTube Music search
               </a>
               |
-              <a href="{{ track.youtube_search_url }}" target="_blank" rel="noopener noreferrer">
+              <a
+                href="{{ track.youtube_search_url }}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Open YouTube search
               </a>
             </div>
-          {% endif %}
+            <form method="post" action="/track/queue" class="track-url-form">
+              <input type="hidden" name="artist" value="{{ artist }}" />
+              <input type="hidden" name="album" value="{{ album_title }}" />
+              <input type="hidden" name="track" value="{{ track.title }}" />
+
+              <input
+                type="text"
+                name="url"
+                placeholder="{{ tr.manual_track_url }}"
+              />
+
+              <button type="submit">{{ tr.add_track_to_queue }}</button>
+            </form>
+            {% endif %}
+          </div>
+          {% endfor %}
         </div>
-      {% endfor %}
+
+        <a class="button-link" href="/incomplete"
+          >{{ tr.back_to_incomplete_albums }}</a
+        >
+      </main>
     </div>
-
-    <a class="button-link" href="/incomplete">{{ tr.back_to_incomplete_albums }}</a>
-  </main>
-
-</div>
-</body>
+  </body>
 </html>

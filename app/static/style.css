@@ -365,3 +365,24 @@ pre {
   font-size: 28px;
   color: var(--accent);
 }
+
+.track-url-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.track-url-form input[type=text] {
+  flex: 1;
+  margin-top: 0;
+}
+
+.queued-label {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  background: #f5a623;
+  color: #111;
+  border-radius: 3px;
+  font-weight: bold;
+}
