@@ -11,5 +11,5 @@ services:
       - DOWNLOAD_DIR=${DOWNLOAD_DIR}
     volumes:
       - ./app:/app
-      - /data/media/music/YouTube/Lidarr Missing:/downloads
+      - /data/media/music:/data/media/music
     restart: unless-stopped

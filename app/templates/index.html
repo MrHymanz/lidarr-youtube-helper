@@ -53,18 +53,13 @@
           <h2>
             {{ tr.queue }} <span class="queue-count">{{ queue|length }}</span>
           </h2>
+
           {% if queue %}
           <div class="queue-actions">
             <form method="post" action="/download">
               <button type="submit">{{ tr.download_queue }}</button>
             </form>
 
-            <form method="post" action="/queue/clear">
-              <button type="submit">Clear queue</button>
-            </form>
-          </div>
-          {% endif %} {% if queue %}
-          <div class="queue-actions">
             <form method="post" action="/queue/clear">
               <button type="submit">Clear queue</button>
             </form>

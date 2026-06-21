@@ -337,15 +337,17 @@ def get_artist_by_id(artist_id):
     r.raise_for_status()
 
     return next(
-        (artist for artist in r.json() if artist.get("id") == artist_id),
+        (artist for artist in r.json() if str(artist.get("id")) == str(artist_id)),
         None,
     )
 
 
 def find_album_target_candidates(album):
-    artist = album.get("artist") or get_artist_by_id(album.get("artistId"))
+    print("[MATCH] function called", flush=True)
+    artist = album.get("artist") or get_artist_by_id(get_artist_by_id(artist_id))
 
     if not artist:
+        print(f"[MATCH] No artist found for artistId: {album.get('artistId')}", flush=True)
         return []
 
     artist_path = Path(artist.get("path", ""))
@@ -365,12 +367,21 @@ def find_album_target_candidates(album):
 
     scored = []
 
+    print(f"[MATCH] Artist path: {artist_path}", flush=True)
+    print(f"[MATCH] Album title: {album_title}", flush=True)
+    print(f"[MATCH] Search names: {search_names}", flush=True)
+    print(f"[MATCH] Artist path exists: {artist_path.exists()}", flush=True)
+
     for folder in folders:
         folder_name = folder.name.lower()
 
         score = max(
             difflib.SequenceMatcher(None, folder_name, name.lower()).ratio()
             for name in search_names
+        )
+        print(
+            f"[MATCH] {folder.name} -> {round(score * 100, 1)}%",
+            flush=True
         )
 
         if album_title.lower() in folder_name or score > 0.55:
@@ -571,6 +582,7 @@ def album_details(album_id):
 
 @app.route("/album/<album_id>/import-preview")
 def album_import_preview(album_id):
+    print("[IMPORT PREVIEW] route called", flush=True)
     album, tracks = get_album_details(album_id)
 
     if not album:
