@@ -36,6 +36,7 @@
 
           {% if source_exists %}
           <p class="status-success">{{ tr.source_found }}</p>
+          <p>{{ tr.audio_files_found }}: {{ audio_files|length }}</p>
           {% else %}
           <p class="status-failed">{{ tr.source_not_found }}</p>
           {% endif %}
@@ -47,21 +48,43 @@
             <span class="queue-count">{{ candidates|length }}</span>
           </h2>
 
-          {% if candidates %} {% for candidate in candidates %}
-          <div class="download-record">
-            <strong>{{ candidate.name }}</strong><br />
-            <small>{{ candidate.path }}</small><br />
-            <small>{{ tr.match_score }}: {{ candidate.score }}%</small>
+          {% for candidate in candidates %}
+          <div class="card {% if loop.first %}best-match{% endif %}">
+            <strong>{{ candidate.name }}</strong>
 
-            {% if candidates|length == 1 %}
-            <p class="status-success">{{ tr.auto_selected_target }}</p>
+            {% if loop.first %}
+            <span class="badge">{{ tr.recommended }}</span>
             {% endif %}
-          </div>
-          {% endfor %} {% else %}
-          <p class="muted">{{ tr.no_target_candidates }}</p>
-          {% endif %}
-        </div>
 
+            <br />
+
+            <code>{{ candidate.path }}</code><br />
+
+            {{ tr.match_score }}: {{ candidate.score }}%
+
+            <form
+              method="post"
+              action="{{ url_for('album_import', album_id=album.id) }}"
+            >
+              <input
+                type="hidden"
+                name="target_path"
+                value="{{ candidate.path }}"
+              />
+
+              {% if loop.first %}
+              <button type="submit" {% if audio_files|length == 0 %}disabled{% endif %}>
+                {{ tr.import_recommended_folder }}
+              </button>
+              {% else %}
+              <button type="submit" class="secondary" {% if audio_files|length == 0 %}disabled{% endif %}>
+                {{ tr.import_this_folder }}
+              </button>
+              {% endif %}
+            </form>
+          </div>
+          {% endfor %}
+        </div>
         <a class="button-link" href="/album/{{ album.id }}">{{ tr.back }}</a>
       </main>
     </div>

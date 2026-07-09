@@ -386,3 +386,22 @@ pre {
   border-radius: 3px;
   font-weight: bold;
 }
+
+.best-match {
+  border-left: 4px solid #22c55e;
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #22c55e;
+  color: #111;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.secondary {
+  opacity: 0.75;
+}

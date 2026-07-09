@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import difflib
+import shutil
 from pathlib import Path
 from datetime import datetime
 
@@ -104,6 +105,11 @@ TRANSLATIONS = {
         "auto_selected_target": "Only one target folder was found. This folder would be used automatically.",
         "no_target_candidates": "No target folders found.",
         "back": "Back",
+        "best_match": "Best Match",
+        "recommended": "Recommended",
+        "import_recommended_folder": "Import to recommended folder",
+        "import_this_folder": "Import to this folder",
+        "audio_files_found": "Audio files found",
     },
     "nl": {
         "language_name": "Nederlands",
@@ -184,6 +190,11 @@ TRANSLATIONS = {
         "auto_selected_target": "Er is maar één doelmap gevonden. Deze map zou automatisch gebruikt worden.",
         "no_target_candidates": "Geen doelmappen gevonden.",
         "back": "Terug",
+        "best_match": "Beste match",
+        "recommended": "Aanbevolen",
+        "import_recommended_folder": "Importeer naar aanbevolen map",
+        "import_this_folder": "Importeer naar deze map",
+        "audio_files_found": "Audiobestanden gevonden",
     },
     "no": {
         "language_name": "Norsk",
@@ -262,6 +273,11 @@ TRANSLATIONS = {
         "match_score": "Treffscore",
         "auto_selected_target": "Bare én målmappe ble funnet. Denne ville blitt brukt automatisk.",
         "no_target_candidates": "Ingen målmapper funnet.",
+        "best_match": "Beste treff",
+        "recommended": "Anbefalt",
+        "import_recommended_folder": "Importer til anbefalt mappe",
+        "import_this_folder": "Importer til denne mappen",
+        "audio_files_found": "Lydfiler funnet",
     },
 }
 
@@ -375,20 +391,45 @@ def find_album_target_candidates(album):
     for folder in folders:
         folder_name = folder.name.lower()
 
-        score = max(
+        base_score = max(
             difflib.SequenceMatcher(None, folder_name, name.lower()).ratio()
             for name in search_names
         )
+
+        bonus = 0
+
+        # Lidarr album folders met jaartal zijn meestal betrouwbaarder
+        if (
+            release_year
+            and f"({release_year})" in folder.name
+            and album_title.lower() in folder_name
+        ):
+            bonus += 0.20
+
+        # Folder begint exact met albumtitel: sterke match
+        if folder_name.startswith(album_title.lower()):
+            bonus += 0.10
+
+        # Folder begint met artist - album: ook goed, maar iets minder sterk
+        artist_album_name = f"{artist.get('artistName')} - {album_title}".lower()
+        if folder_name.startswith(artist_album_name):
+            bonus += 0.05
+
+        final_score = base_score + bonus
+
         print(
-            f"[MATCH] {folder.name} -> {round(score * 100, 1)}%",
+            f"[MATCH] {folder.name} -> base {round(base_score * 100, 1)}%, "
+            f"bonus {round(bonus * 100, 1)}%, final {round(final_score * 100, 1)}%",
             flush=True
         )
 
-        if album_title.lower() in folder_name or score > 0.55:
+        if final_score >= 0.90:
             scored.append({
                 "path": str(folder),
                 "name": folder.name,
-                "score": round(score * 100, 1),
+                "score": round(final_score * 100, 1),
+                "base_score": round(base_score * 100, 1),
+                "bonus": round(bonus * 100, 1),
             })
 
     return sorted(scored, key=lambda item: item["score"], reverse=True)
@@ -580,6 +621,17 @@ def album_details(album_id):
         lidarr_url=LIDARR_URL,
     )
 
+def get_audio_files(path):
+    audio_extensions = {".mp3", ".m4a", ".flac", ".ogg", ".opus", ".wav"}
+
+    if not path.exists():
+        return []
+
+    return sorted(
+        [p for p in path.iterdir() if p.is_file() and p.suffix.lower() in audio_extensions],
+        key=lambda p: p.name.lower(),
+    )
+
 @app.route("/album/<album_id>/import-preview")
 def album_import_preview(album_id):
     print("[IMPORT PREVIEW] route called", flush=True)
@@ -592,6 +644,7 @@ def album_import_preview(album_id):
     album_title = album.get("title", "Unknown Album")
 
     source_path = DOWNLOAD_DIR / f"{artist} - {album_title}"
+    audio_files = get_audio_files(source_path)
     candidates = find_album_target_candidates(album)
 
     return render_template(
@@ -602,9 +655,56 @@ def album_import_preview(album_id):
         album_title=album_title,
         source_path=str(source_path),
         source_exists=source_path.exists(),
+        audio_files=audio_files,
         candidates=candidates,
         lidarr_url=LIDARR_URL,
     )
+
+@app.route("/album/<int:album_id>/import", methods=["POST"])
+def album_import(album_id):
+    album, tracks = get_album_details(album_id)
+
+    if not album:
+        return "Album not found", 404
+
+    artist = album.get("artist", {}).get("artistName", "Unknown Artist")
+    album_title = album.get("title", "Unknown Album")
+
+    source_path = DOWNLOAD_DIR / f"{artist} - {album_title}"
+    target_path = Path(request.form["target_path"])
+
+    if not source_path.exists():
+        return f"Source folder not found: {source_path}", 404
+
+    if not target_path.exists():
+        return f"Target folder not found: {target_path}", 404
+
+    audio_extensions = {".mp3", ".m4a", ".flac", ".ogg", ".opus", ".wav"}
+
+    moved = []
+
+    for file in source_path.iterdir():
+        if not file.is_file():
+            continue
+
+        if file.suffix.lower() not in audio_extensions:
+            continue
+
+        destination = target_path / file.name
+
+        if destination.exists():
+            print(f"[IMPORT] Skipping existing file: {destination}", flush=True)
+            continue
+
+        shutil.move(str(file), str(destination))
+        moved.append(file.name)
+
+    print(
+        f"[IMPORT] Moved {len(moved)} files from {source_path} to {target_path}",
+        flush=True,
+    )
+
+    return redirect(url_for("album_import_preview", album_id=album_id))
 
 @app.route("/scan", methods=["POST"])
 def scan():
