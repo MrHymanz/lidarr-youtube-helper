@@ -23,8 +23,17 @@
       </aside>
 
       <main class="content">
-        <h1>{{ artist }} - {{ album_title }}</h1>
-
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              <div class="flash-messages">
+                {% for category, message in messages %}
+                  <div class="flash-message flash-{{ category }}">
+                    {{ message }}
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% endwith %}
         <div class="card help-box">
           <h3>{{ tr.import_preview }}</h3>
           <p>{{ tr.import_preview_help }}</p>
@@ -74,7 +83,7 @@
 
               {% if loop.first %}
               <button type="submit" {% if audio_files|length == 0 %}disabled{% endif %}>
-                {{ tr.import_recommended_folder }}
+                {{ tr.prepare_for_import }}
               </button>
               {% else %}
               <button type="submit" class="secondary" {% if audio_files|length == 0 %}disabled{% endif %}>

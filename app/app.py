@@ -3,13 +3,15 @@ import os
 import subprocess
 import difflib
 import shutil
+import re
 from pathlib import Path
 from datetime import datetime
 
 import requests
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, flash, redirect, render_template, request, url_for
 
 app = Flask(__name__)
+app.secret_key = os.environ["FLASK_SECRET_KEY"]
 
 LIDARR_URL = os.environ["LIDARR_URL"].rstrip("/")
 LIDARR_API_KEY = os.environ["LIDARR_API_KEY"]
@@ -110,6 +112,17 @@ TRANSLATIONS = {
         "import_recommended_folder": "Import to recommended folder",
         "import_this_folder": "Import to this folder",
         "audio_files_found": "Audio files found",
+        "import_success": "Import completed",
+        "import_moved_files": "{count} audio file(s) imported.",
+        "import_skipped_files": "{count} file(s) skipped.",
+        "import_no_files": "No audio files were imported.",
+        "lidarr_scan_started": "Lidarr refresh started.",
+        "lidarr_scan_failed": "Files were imported, but the Lidarr refresh failed.",
+        "metadata_failed_files": "{count} file(s) could not be processed because metadata normalization failed.",
+        "track_match_failed_files": "{count} file(s) could not be matched to a Lidarr track.",
+        "prepare_import_success": "{count} audio file(s) prepared for Lidarr manual import.",
+        "prepare_import_no_files": "No audio files were prepared.",
+        "prepare_for_import": "Prepare files for Lidarr import",
     },
     "nl": {
         "language_name": "Nederlands",
@@ -195,6 +208,17 @@ TRANSLATIONS = {
         "import_recommended_folder": "Importeer naar aanbevolen map",
         "import_this_folder": "Importeer naar deze map",
         "audio_files_found": "Audiobestanden gevonden",
+        "import_success": "Import voltooid",
+        "import_moved_files": "{count} audiobestand(en) geïmporteerd.",
+        "import_skipped_files": "{count} bestand(en) overgeslagen.",
+        "import_no_files": "Er zijn geen audiobestanden geïmporteerd.",
+        "lidarr_scan_started": "Lidarr-verversing is gestart.",
+        "lidarr_scan_failed": "De bestanden zijn geïmporteerd, maar de Lidarr-verversing is mislukt.",
+        "metadata_failed_files": "{count} bestand(en) konden niet worden verwerkt doordat de metadata-aanpassing mislukte.",
+        "track_match_failed_files": "{count} bestand(en) konden niet aan een Lidarr-track worden gekoppeld.",
+        "prepare_import_success": "{count} audiobestand(en) voorbereid voor handmatige Lidarr-import.",
+        "prepare_import_no_files": "Er zijn geen audiobestanden voorbereid.",
+        "prepare_for_import": "Bestanden voorbereiden voor Lidarr-import",
     },
     "no": {
         "language_name": "Norsk",
@@ -278,6 +302,17 @@ TRANSLATIONS = {
         "import_recommended_folder": "Importer til anbefalt mappe",
         "import_this_folder": "Importer til denne mappen",
         "audio_files_found": "Lydfiler funnet",
+        "import_success": "Import fullført",
+        "import_moved_files": "{count} lydfil(er) importert.",
+        "import_skipped_files": "{count} fil(er) hoppet over.",
+        "import_no_files": "Ingen lydfiler ble importert.",
+        "lidarr_scan_started": "Lidarr-oppdatering startet.",
+        "lidarr_scan_failed": "Filene ble importert, men Lidarr-oppdateringen mislyktes.",
+        "metadata_failed_files": "{count} fil(er) kunne ikke behandles fordi metadataoppdateringen mislyktes.",
+        "track_match_failed_files": "{count} fil(er) kunne ikke kobles til et Lidarr-spor.",
+        "prepare_import_success": "{count} lydfil(er) klargjort for manuell import i Lidarr.",
+        "prepare_import_no_files": "Ingen lydfiler ble klargjort.",
+        "prepare_for_import": "Klargjør filer for import i Lidarr",
     },
 }
 
@@ -360,67 +395,101 @@ def get_artist_by_id(artist_id):
 
 def find_album_target_candidates(album):
     print("[MATCH] function called", flush=True)
-    artist = album.get("artist") or get_artist_by_id(get_artist_by_id(artist_id))
 
-    if not artist:
-        print(f"[MATCH] No artist found for artistId: {album.get('artistId')}", flush=True)
+    artist_id = album.get("artistId")
+    artist_value = album.get("artist")
+
+    if isinstance(artist_value, dict):
+        artist_data = artist_value
+    else:
+        artist_data = get_artist_by_id(artist_id)
+
+    if not artist_data:
+        print(
+            f"[MATCH] No artist found for artistId: {artist_id}",
+            flush=True,
+        )
         return []
 
-    artist_path = Path(artist.get("path", ""))
-    album_title = album.get("title", "")
+    artist_name = artist_data.get("artistName", "Unknown Artist")
+    artist_path = Path(artist_data.get("path", ""))
+
+    album_title = album.get("title", "Unknown Album")
     release_year = (album.get("releaseDate") or "")[:4]
 
+    print(f"[MATCH] Artist ID: {artist_id}", flush=True)
+    print(f"[MATCH] Artist name: {artist_name}", flush=True)
+    print(f"[MATCH] Artist path: {artist_path}", flush=True)
+    print(f"[MATCH] Album title: {album_title}", flush=True)
+    print(f"[MATCH] Artist path exists: {artist_path.exists()}", flush=True)
+
     if not artist_path.exists():
+        print(
+            f"[MATCH] Artist path does not exist: {artist_path}",
+            flush=True,
+        )
         return []
 
-    folders = [p for p in artist_path.iterdir() if p.is_dir()]
+    try:
+        folders = [path for path in artist_path.iterdir() if path.is_dir()]
+    except OSError as exc:
+        print(
+            f"[MATCH] Could not read artist path {artist_path}: {exc}",
+            flush=True,
+        )
+        return []
 
     search_names = [
         album_title,
-        f"{album_title} ({release_year})" if release_year else album_title,
-        f"{artist.get('artistName')} - {album_title}",
+        (
+            f"{album_title} ({release_year})"
+            if release_year
+            else album_title
+        ),
+        f"{artist_name} - {album_title}",
     ]
 
-    scored = []
-
-    print(f"[MATCH] Artist path: {artist_path}", flush=True)
-    print(f"[MATCH] Album title: {album_title}", flush=True)
     print(f"[MATCH] Search names: {search_names}", flush=True)
-    print(f"[MATCH] Artist path exists: {artist_path.exists()}", flush=True)
+
+    scored = []
+    normalized_album_title = album_title.lower()
+    artist_album_name = f"{artist_name} - {album_title}".lower()
 
     for folder in folders:
         folder_name = folder.name.lower()
 
         base_score = max(
-            difflib.SequenceMatcher(None, folder_name, name.lower()).ratio()
-            for name in search_names
+            difflib.SequenceMatcher(
+                None,
+                folder_name,
+                search_name.lower(),
+            ).ratio()
+            for search_name in search_names
         )
 
-        bonus = 0
+        bonus = 0.0
 
-        # Lidarr album folders met jaartal zijn meestal betrouwbaarder
         if (
             release_year
             and f"({release_year})" in folder.name
-            and album_title.lower() in folder_name
+            and normalized_album_title in folder_name
         ):
             bonus += 0.20
 
-        # Folder begint exact met albumtitel: sterke match
-        if folder_name.startswith(album_title.lower()):
+        if folder_name.startswith(normalized_album_title):
             bonus += 0.10
 
-        # Folder begint met artist - album: ook goed, maar iets minder sterk
-        artist_album_name = f"{artist.get('artistName')} - {album_title}".lower()
         if folder_name.startswith(artist_album_name):
             bonus += 0.05
 
         final_score = base_score + bonus
 
         print(
-            f"[MATCH] {folder.name} -> base {round(base_score * 100, 1)}%, "
-            f"bonus {round(bonus * 100, 1)}%, final {round(final_score * 100, 1)}%",
-            flush=True
+            f"[MATCH] {folder.name} -> "
+            f"base {round(base_score * 100, 1)}%, "
+            f"bonus {round(bonus * 100, 1)}%, "
+            f"final {round(final_score * 100, 1)}%",
+            flush=True,
         )
 
         if final_score >= 0.90:
@@ -432,7 +501,11 @@ def find_album_target_candidates(album):
                 "bonus": round(bonus * 100, 1),
             })
 
-    return sorted(scored, key=lambda item: item["score"], reverse=True)
+    return sorted(
+        scored,
+        key=lambda item: item["score"],
+        reverse=True,
+    )
 
 @app.route("/")
 def index():
@@ -580,6 +653,12 @@ def get_album_details(album_id):
 def album_details(album_id):
     album, tracks = get_album_details(album_id)
 
+    print(
+        f"[IMPORT] Requested albumId={album_id}; "
+        f"track albumIds={sorted(set(str(track.get('albumId')) for track in tracks))}",
+        flush=True,
+    )
+
     if not album:
         return "Album not found", 404
 
@@ -660,6 +739,253 @@ def album_import_preview(album_id):
         lidarr_url=LIDARR_URL,
     )
 
+def trigger_lidarr_artist_scan(artist_id):
+    if not artist_id:
+        print("[LIDARR SCAN] No artistId available", flush=True)
+        return None
+
+    response = requests.post(
+        f"{LIDARR_URL}/api/v1/command",
+        headers=HEADERS,
+        json={
+            "name": "RefreshArtist",
+            "artistId": int(artist_id),
+        },
+        timeout=30,
+    )
+
+    response.raise_for_status()
+
+    command = response.json()
+
+    print(
+        f"[LIDARR SCAN] RefreshArtist started for artistId {artist_id}, "
+        f"commandId={command.get('id')}",
+        flush=True,
+    )
+
+    return command
+
+def get_track_number(track):
+    """Haal een bruikbaar tracknummer uit een Lidarr-trackobject."""
+    value = (
+        track.get("trackNumber")
+        or track.get("absoluteTrackNumber")
+        or track.get("mediumNumber")
+    )
+
+    if value is None:
+        return None
+
+    match = re.search(r"\d+", str(value))
+    return int(match.group()) if match else None
+
+
+def get_filename_track_number(file_path):
+    """Herken bijvoorbeeld 16 uit '16. Fluffy Intro.m4a'."""
+    match = re.match(r"^\s*(\d{1,3})[\s._-]+", file_path.stem)
+    return int(match.group(1)) if match else None
+
+
+def normalize_match_text(value):
+    value = str(value or "").lower()
+    value = re.sub(r"[^a-z0-9]+", " ", value)
+    return " ".join(value.split())
+
+
+def find_track_for_file(file_path, tracks, album_id=None):
+    """
+    Zoek de juiste Lidarr-track voor een audiobestand.
+
+    Eerst worden tracks beperkt tot het huidige album.
+    Daarna worden tracknummer en titel samen beoordeeld.
+    """
+    album_tracks = tracks
+
+    if album_id is not None:
+        filtered_tracks = [
+            track
+            for track in tracks
+            if str(track.get("albumId")) == str(album_id)
+        ]
+
+        if filtered_tracks:
+            album_tracks = filtered_tracks
+
+    filename_number = get_filename_track_number(file_path)
+
+    filename_title = re.sub(
+        r"^\s*\d{1,3}[\s._-]+",
+        "",
+        file_path.stem,
+    ).strip()
+
+    normalized_filename_title = normalize_match_text(filename_title)
+
+    best_track = None
+    best_score = 0.0
+
+    for track in album_tracks:
+        track_title = str(track.get("title") or "").strip()
+
+        if not track_title:
+            continue
+
+        normalized_track_title = normalize_match_text(track_title)
+
+        title_score = difflib.SequenceMatcher(
+            None,
+            normalized_filename_title,
+            normalized_track_title,
+        ).ratio()
+
+        track_number = get_track_number(track)
+
+        number_matches = (
+            filename_number is not None
+            and track_number is not None
+            and filename_number == track_number
+        )
+
+        # Titel is het belangrijkst.
+        score = title_score
+
+        # Alleen bonus geven voor tracknummer als de titel ook enigszins matcht.
+        if number_matches and title_score >= 0.45:
+            score += 0.25
+
+        print(
+            f"[TRACK MATCH] {file_path.name} -> "
+            f"{track_number or '?'} - {track_title}: "
+            f"title={title_score:.1%}, "
+            f"number_match={number_matches}, "
+            f"final={score:.1%}",
+            flush=True,
+        )
+
+        if score > best_score:
+            best_score = score
+            best_track = track
+
+    if best_track and best_score >= 0.70:
+        print(
+            f"[TRACK MATCH] Selected for {file_path.name}: "
+            f"{get_track_number(best_track) or '?'} - "
+            f"{best_track.get('title')} ({best_score:.1%})",
+            flush=True,
+        )
+        return best_track
+
+    print(
+        f"[TRACK MATCH] No reliable match for {file_path.name}; "
+        f"best score was {best_score:.1%}",
+        flush=True,
+    )
+
+    return None
+
+
+def normalize_audio_metadata(
+    file_path,
+    artist_name,
+    album_title,
+    release_year,
+    track,
+):
+    """
+    Schrijf Lidarr-vriendelijke metadata met ffmpeg.
+    De audiostream wordt niet opnieuw gecodeerd.
+    """
+    track_number = get_track_number(track)
+    track_title = str(track.get("title") or file_path.stem).strip()
+
+    temp_path = file_path.with_name(
+        f".{file_path.stem}.metadata-temp{file_path.suffix}"
+    )
+
+    command = [
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-i",
+        str(file_path),
+
+        # Neem alle audio-, video- en coverstreams mee.
+        "-map",
+        "0",
+
+        # Geen hercodering.
+        "-c",
+        "copy",
+
+        # Verwijder eerst de bestaande YouTube-metadata.
+        "-map_metadata",
+        "-1",
+
+        "-metadata",
+        f"title={track_title}",
+        "-metadata",
+        f"artist={artist_name}",
+        "-metadata",
+        f"album_artist={artist_name}",
+        "-metadata",
+        f"album={album_title}",
+    ]
+
+    if track_number is not None:
+        command.extend([
+            "-metadata",
+            f"track={track_number}",
+        ])
+
+    if release_year:
+        command.extend([
+            "-metadata",
+            f"date={release_year}",
+        ])
+
+    command.append(str(temp_path))
+
+    try:
+        subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+
+        temp_path.replace(file_path)
+
+        print(
+            f"[METADATA] Updated {file_path.name}: "
+            f"{track_number or '?'} - {track_title}",
+            flush=True,
+        )
+
+        return True
+
+    except subprocess.CalledProcessError as exc:
+        print(
+            f"[METADATA] ffmpeg failed for {file_path}: "
+            f"{exc.stderr.strip()}",
+            flush=True,
+        )
+
+    except subprocess.TimeoutExpired:
+        print(
+            f"[METADATA] ffmpeg timed out for {file_path}",
+            flush=True,
+        )
+
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
+
+    return False
+
 @app.route("/album/<int:album_id>/import", methods=["POST"])
 def album_import(album_id):
     album, tracks = get_album_details(album_id)
@@ -667,21 +993,33 @@ def album_import(album_id):
     if not album:
         return "Album not found", 404
 
-    artist = album.get("artist", {}).get("artistName", "Unknown Artist")
-    album_title = album.get("title", "Unknown Album")
+    artist_data = album.get("artist")
 
-    source_path = DOWNLOAD_DIR / f"{artist} - {album_title}"
-    target_path = Path(request.form["target_path"])
+    if isinstance(artist_data, dict):
+        artist_name = artist_data.get("artistName", "Unknown Artist")
+    else:
+        artist_name = str(artist_data or "Unknown Artist")
+
+    album_title = album.get("title", "Unknown Album")
+    release_year = (album.get("releaseDate") or "")[:4]
+
+    source_path = DOWNLOAD_DIR / f"{artist_name} - {album_title}"
 
     if not source_path.exists():
         return f"Source folder not found: {source_path}", 404
 
-    if not target_path.exists():
-        return f"Target folder not found: {target_path}", 404
+    audio_extensions = {
+        ".mp3",
+        ".m4a",
+        ".flac",
+        ".ogg",
+        ".opus",
+        ".wav",
+    }
 
-    audio_extensions = {".mp3", ".m4a", ".flac", ".ogg", ".opus", ".wav"}
-
-    moved = []
+    prepared = []
+    metadata_failed = []
+    track_match_failed = []
 
     for file in source_path.iterdir():
         if not file.is_file():
@@ -690,21 +1028,103 @@ def album_import(album_id):
         if file.suffix.lower() not in audio_extensions:
             continue
 
-        destination = target_path / file.name
+        track = find_track_for_file(
+            file_path=file,
+            tracks=tracks,
+            album_id=album_id,
+        )
 
-        if destination.exists():
-            print(f"[IMPORT] Skipping existing file: {destination}", flush=True)
+        if not track:
+            track_match_failed.append(file.name)
+
+            print(
+                f"[PREPARE] No reliable Lidarr track match: {file.name}",
+                flush=True,
+            )
             continue
 
-        shutil.move(str(file), str(destination))
-        moved.append(file.name)
+        metadata_ok = normalize_audio_metadata(
+            file_path=file,
+            artist_name=artist_name,
+            album_title=album_title,
+            release_year=release_year,
+            track=track,
+        )
 
-    print(
-        f"[IMPORT] Moved {len(moved)} files from {source_path} to {target_path}",
-        flush=True,
+        if not metadata_ok:
+            metadata_failed.append(file.name)
+
+            print(
+                f"[PREPARE] Metadata update failed: {file.name}",
+                flush=True,
+            )
+            continue
+
+        track_number = get_track_number(track)
+        track_title = str(track.get("title") or file.stem).strip()
+
+        if track_number is not None:
+            prepared_name = (
+                f"{track_number:02d}. "
+                f"{track_title}"
+                f"{file.suffix.lower()}"
+            )
+        else:
+            prepared_name = file.name
+
+        prepared_path = source_path / prepared_name
+
+        if prepared_path != file:
+            if prepared_path.exists():
+                prepared_path.unlink()
+
+            file.rename(prepared_path)
+
+        prepared.append(prepared_path.name)
+
+        print(
+            f"[PREPARE] Ready for Lidarr manual import: "
+            f"{prepared_path}",
+            flush=True,
+        )
+
+    translation = t()
+
+    if prepared:
+        flash(
+            translation["prepare_import_success"].format(
+                count=len(prepared)
+            ),
+            "success",
+        )
+    else:
+        flash(
+            translation["prepare_import_no_files"],
+            "warning",
+        )
+
+    if track_match_failed:
+        flash(
+            translation["track_match_failed_files"].format(
+                count=len(track_match_failed)
+            ),
+            "warning",
+        )
+
+    if metadata_failed:
+        flash(
+            translation["metadata_failed_files"].format(
+                count=len(metadata_failed)
+            ),
+            "error",
+        )
+
+    return redirect(
+        url_for(
+            "album_import_preview",
+            album_id=album_id,
+        )
     )
-
-    return redirect(url_for("album_import_preview", album_id=album_id))
 
 @app.route("/scan", methods=["POST"])
 def scan():
