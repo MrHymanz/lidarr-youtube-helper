@@ -4,6 +4,7 @@ import subprocess
 import difflib
 import shutil
 import re
+import unicodedata
 from pathlib import Path
 from datetime import datetime
 
@@ -123,6 +124,25 @@ TRANSLATIONS = {
         "prepare_import_success": "{count} audio file(s) prepared for Lidarr manual import.",
         "prepare_import_no_files": "No audio files were prepared.",
         "prepare_for_import": "Prepare files for Lidarr import",
+        "review_metadata": "Review metadata",
+        "metadata_review": "Metadata review",
+        "current_metadata": "Current metadata",
+        "suggested_metadata": "Suggested metadata",
+        "artist": "Artist",
+        "album_artist": "Album artist",
+        "album": "Album",
+        "track_title": "Track title",
+        "track_number": "Track number",
+        "disc_number": "Disc number",
+        "year": "Year",
+        "genre": "Genre",
+        "filename": "Filename",
+        "apply_metadata": "Apply metadata",
+        "metadata_apply_success": "Metadata was updated successfully.",
+        "metadata_apply_failed": "Metadata could not be updated.",
+        "no_source_files_title": "Nothing to prepare",
+        "no_source_files_message": "No downloaded audio files are available for this album yet. Add a missing track to the queue and complete the download first.",
+        "target": "Target",
     },
     "nl": {
         "language_name": "Nederlands",
@@ -219,6 +239,25 @@ TRANSLATIONS = {
         "prepare_import_success": "{count} audiobestand(en) voorbereid voor handmatige Lidarr-import.",
         "prepare_import_no_files": "Er zijn geen audiobestanden voorbereid.",
         "prepare_for_import": "Bestanden voorbereiden voor Lidarr-import",
+        "review_metadata": "Metadata controleren",
+        "metadata_review": "Metadata controleren",
+        "current_metadata": "Huidige metadata",
+        "suggested_metadata": "Voorgestelde metadata",
+        "artist": "Artiest",
+        "album_artist": "Albumartiest",
+        "album": "Album",
+        "track_title": "Tracktitel",
+        "track_number": "Tracknummer",
+        "disc_number": "Discnummer",
+        "year": "Jaar",
+        "genre": "Genre",
+        "filename": "Bestandsnaam",
+        "apply_metadata": "Metadata toepassen",
+        "metadata_apply_success": "De metadata is succesvol bijgewerkt.",
+        "metadata_apply_failed": "De metadata kon niet worden bijgewerkt.",
+        "no_source_files_title": "Niets om voor te bereiden",
+        "no_source_files_message": "Er zijn nog geen gedownloade audiobestanden voor dit album. Voeg eerst een ontbrekend nummer toe aan de wachtrij en rond de download af.",
+        "target": "Doel",
     },
     "no": {
         "language_name": "Norsk",
@@ -313,6 +352,25 @@ TRANSLATIONS = {
         "prepare_import_success": "{count} lydfil(er) klargjort for manuell import i Lidarr.",
         "prepare_import_no_files": "Ingen lydfiler ble klargjort.",
         "prepare_for_import": "Klargjør filer for import i Lidarr",
+        "review_metadata": "Kontroller metadata",
+        "metadata_review": "Metadatakontroll",
+        "current_metadata": "Nåværende metadata",
+        "suggested_metadata": "Foreslått metadata",
+        "artist": "Artist",
+        "album_artist": "Albumartist",
+        "album": "Album",
+        "track_title": "Sportittel",
+        "track_number": "Spornummer",
+        "disc_number": "Platenummer",
+        "year": "År",
+        "genre": "Sjanger",
+        "filename": "Filnavn",
+        "apply_metadata": "Bruk metadata",
+        "metadata_apply_success": "Metadata ble oppdatert.",
+        "metadata_apply_failed": "Metadata kunne ikke oppdateres.",
+        "no_source_files_title": "Ingenting å klargjøre",
+        "no_source_files_message": "Det finnes ingen nedlastede lydfiler for dette albumet ennå. Legg først et manglende spor i køen og fullfør nedlastingen.",
+        "target": "Mål",
     },
 }
 
@@ -711,6 +769,423 @@ def get_audio_files(path):
         key=lambda p: p.name.lower(),
     )
 
+def read_audio_metadata(file_path):
+    command = [
+        "ffprobe",
+        "-v",
+        "quiet",
+        "-print_format",
+        "json",
+        "-show_entries",
+        "format_tags",
+        str(file_path),
+    ]
+
+    try:
+        result = subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except subprocess.CalledProcessError as exc:
+        print(
+            f"[METADATA READ] ffprobe failed for {file_path}: "
+            f"{exc.stderr.strip()}",
+            flush=True,
+        )
+        return {}
+    except subprocess.TimeoutExpired:
+        print(
+            f"[METADATA READ] ffprobe timed out for {file_path}",
+            flush=True,
+        )
+        return {}
+
+    try:
+        data = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        print(
+            f"[METADATA READ] Invalid ffprobe JSON for {file_path}",
+            flush=True,
+        )
+        return {}
+
+    tags = data.get("format", {}).get("tags", {})
+
+    # ffprobe kan verschillende hoofdlettervarianten teruggeven.
+    normalized_tags = {
+        str(key).lower(): value
+        for key, value in tags.items()
+    }
+
+    return {
+        "title": normalized_tags.get("title", ""),
+        "artist": normalized_tags.get("artist", ""),
+        "album_artist": (
+            normalized_tags.get("album_artist")
+            or normalized_tags.get("albumartist")
+            or ""
+        ),
+        "album": normalized_tags.get("album", ""),
+        "track": normalized_tags.get("track", ""),
+        "disc": normalized_tags.get("disc", ""),
+        "year": (
+            normalized_tags.get("date")
+            or normalized_tags.get("year")
+            or ""
+        ),
+        "genre": normalized_tags.get("genre", ""),
+        "comment": normalized_tags.get("comment", ""),
+    }
+
+def build_suggested_metadata(album, track, file_path):
+    artist_value = album.get("artist")
+
+    if isinstance(artist_value, dict):
+        artist_name = artist_value.get(
+            "artistName",
+            "Unknown Artist",
+        )
+    else:
+        artist_name = str(
+            artist_value or "Unknown Artist"
+        )
+
+    album_title = album.get(
+        "title",
+        "Unknown Album",
+    )
+
+    release_year = (
+        album.get("releaseDate") or ""
+    )[:4]
+
+    track_number = get_track_number(track)
+
+    track_title = str(
+        track.get("title") or file_path.stem
+    ).strip()
+
+    disc_number = (
+        track.get("mediumNumber")
+        or track.get("discNumber")
+        or 1
+    )
+
+    if track_number is not None:
+        filename = (
+            f"{track_number:02d}. "
+            f"{track_title}"
+            f"{file_path.suffix.lower()}"
+        )
+    else:
+        filename = file_path.name
+
+    return {
+        "artist": artist_name,
+        "album_artist": artist_name,
+        "album": album_title,
+        "title": track_title,
+        "track": track_number or "",
+        "disc": disc_number,
+        "year": release_year,
+        "genre": "",
+        "filename": filename,
+    }
+
+@app.route(
+    "/album/<int:album_id>/manual-import-review/<path:filename>"
+)
+def manual_import_review(album_id, filename):
+    album, tracks = get_album_details(album_id)
+
+    if not album:
+        return "Album not found", 404
+
+    artist_value = album.get("artist")
+
+    if isinstance(artist_value, dict):
+        artist_name = artist_value.get(
+            "artistName",
+            "Unknown Artist",
+        )
+    else:
+        artist_name = str(
+            artist_value or "Unknown Artist"
+        )
+
+    album_title = album.get(
+        "title",
+        "Unknown Album",
+    )
+
+    source_path = (
+        DOWNLOAD_DIR
+        / f"{artist_name} - {album_title}"
+        / filename
+    )
+
+    if not source_path.exists():
+        return (
+            f"Audio file not found: {source_path}",
+            404,
+        )
+
+    track = find_track_for_file(
+        file_path=source_path,
+        tracks=tracks,
+        album_id=album_id,
+    )
+
+    if not track:
+        flash(
+            t()["track_match_failed_files"].format(
+                count=1
+            ),
+            "warning",
+        )
+
+        return redirect(
+            url_for(
+                "album_import_preview",
+                album_id=album_id,
+            )
+        )
+
+    current_metadata = read_audio_metadata(
+        source_path
+    )
+
+    suggested_metadata = build_suggested_metadata(
+        album=album,
+        track=track,
+        file_path=source_path,
+    )
+
+    return render_template(
+        "manual_import_review.html",
+        tr=t(),
+        album=album,
+        track=track,
+        source_path=str(source_path),
+        filename=filename,
+        current=current_metadata,
+        suggested=suggested_metadata,
+        lidarr_url=LIDARR_URL,
+    )
+
+def apply_custom_metadata(file_path, metadata):
+    temp_path = file_path.with_name(
+        f".{file_path.stem}.metadata-temp"
+        f"{file_path.suffix}"
+    )
+
+    command = [
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-i",
+        str(file_path),
+        "-map",
+        "0",
+        "-c",
+        "copy",
+        "-map_metadata",
+        "-1",
+    ]
+
+    metadata_fields = {
+        "title": metadata.get("title"),
+        "artist": metadata.get("artist"),
+        "album_artist": metadata.get(
+            "album_artist"
+        ),
+        "album": metadata.get("album"),
+        "track": metadata.get("track"),
+        "disc": metadata.get("disc"),
+        "date": metadata.get("year"),
+        "genre": metadata.get("genre"),
+    }
+
+    for key, value in metadata_fields.items():
+        if value not in (None, ""):
+            command.extend([
+                "-metadata",
+                f"{key}={value}",
+            ])
+
+    command.append(str(temp_path))
+
+    try:
+        subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+
+        temp_path.replace(file_path)
+
+        print(
+            f"[METADATA APPLY] Updated {file_path}",
+            flush=True,
+        )
+
+        return True
+
+    except subprocess.CalledProcessError as exc:
+        print(
+            f"[METADATA APPLY] ffmpeg failed: "
+            f"{exc.stderr.strip()}",
+            flush=True,
+        )
+
+    except subprocess.TimeoutExpired:
+        print(
+            f"[METADATA APPLY] ffmpeg timed out: "
+            f"{file_path}",
+            flush=True,
+        )
+
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
+
+    return False    
+
+@app.route(
+    "/album/<int:album_id>/manual-import-apply",
+    methods=["POST"],
+)
+def manual_import_apply(album_id):
+    album, tracks = get_album_details(album_id)
+
+    if not album:
+        return "Album not found", 404
+
+    artist_value = album.get("artist")
+
+    if isinstance(artist_value, dict):
+        album_artist_name = artist_value.get(
+            "artistName",
+            "Unknown Artist",
+        )
+    else:
+        album_artist_name = str(
+            artist_value or "Unknown Artist"
+        )
+
+    album_title = album.get(
+        "title",
+        "Unknown Album",
+    )
+
+    filename = Path(
+        request.form["filename"]
+    ).name
+
+    source_path = (
+        DOWNLOAD_DIR
+        / f"{album_artist_name} - {album_title}"
+        / filename
+    )
+
+    if not source_path.exists():
+        return (
+            f"Audio file not found: {source_path}",
+            404,
+        )
+
+    metadata = {
+        "artist": request.form.get(
+            "artist",
+            "",
+        ).strip(),
+        "album_artist": request.form.get(
+            "album_artist",
+            "",
+        ).strip(),
+        "album": request.form.get(
+            "album",
+            "",
+        ).strip(),
+        "title": request.form.get(
+            "title",
+            "",
+        ).strip(),
+        "track": request.form.get(
+            "track",
+            "",
+        ).strip(),
+        "disc": request.form.get(
+            "disc",
+            "",
+        ).strip(),
+        "year": request.form.get(
+            "year",
+            "",
+        ).strip(),
+        "genre": request.form.get(
+            "genre",
+            "",
+        ).strip(),
+    }
+
+    destination_filename = Path(
+        request.form.get(
+            "destination_filename",
+            filename,
+        )
+    ).name
+
+    success = apply_custom_metadata(
+        file_path=source_path,
+        metadata=metadata,
+    )
+
+    if not success:
+        flash(
+            t()["metadata_apply_failed"],
+            "error",
+        )
+
+        return redirect(
+            url_for(
+                "manual_import_review",
+                album_id=album_id,
+                filename=filename,
+            )
+        )
+
+    destination_path = (
+        source_path.parent
+        / destination_filename
+    )
+
+    if destination_path != source_path:
+        if destination_path.exists():
+            destination_path.unlink()
+
+        source_path.rename(destination_path)
+
+    flash(
+        t()["metadata_apply_success"],
+        "success",
+    )
+
+    return redirect(
+        url_for(
+            "manual_import_review",
+            album_id=album_id,
+            filename=destination_path.name,
+        )
+    )
+
 @app.route("/album/<album_id>/import-preview")
 def album_import_preview(album_id):
     print("[IMPORT PREVIEW] route called", flush=True)
@@ -788,8 +1263,27 @@ def get_filename_track_number(file_path):
 
 
 def normalize_match_text(value):
-    value = str(value or "").lower()
+    value = unicodedata.normalize("NFKD", str(value or ""))
+    value = value.encode("ascii", "ignore").decode("ascii")
+    value = value.lower()
+
+    # Veelvoorkomende YouTube-uitbreidingen verwijderen
+    noise_phrases = [
+        "official soundtrack",
+        "original soundtrack",
+        "video game soundtrack",
+        "game soundtrack",
+        "ost",
+        "audio",
+        "official audio",
+    ]
+
+    for phrase in noise_phrases:
+        value = value.replace(phrase, " ")
+
+    value = re.sub(r"[\[\](){}\"“”'‘’]+", " ", value)
     value = re.sub(r"[^a-z0-9]+", " ", value)
+
     return " ".join(value.split())
 
 
@@ -820,6 +1314,14 @@ def find_track_for_file(file_path, tracks, album_id=None):
         file_path.stem,
     ).strip()
 
+    # Verwijder extra album-/soundtracktekst na de tracktitel
+    filename_title = re.sub(
+        r"\s+-\s+.*(?:soundtrack|ost).*$",
+        "",
+        filename_title,
+        flags=re.IGNORECASE,
+    ).strip()
+
     normalized_filename_title = normalize_match_text(filename_title)
 
     best_track = None
@@ -838,6 +1340,12 @@ def find_track_for_file(file_path, tracks, album_id=None):
             normalized_filename_title,
             normalized_track_title,
         ).ratio()
+
+        if (
+            normalized_track_title
+            and normalized_track_title in normalized_filename_title
+        ):
+            title_score = max(title_score, 0.95)
 
         track_number = get_track_number(track)
 
@@ -1004,6 +1512,20 @@ def album_import(album_id):
     release_year = (album.get("releaseDate") or "")[:4]
 
     source_path = DOWNLOAD_DIR / f"{artist_name} - {album_title}"
+    audio_files = get_audio_files(source_path)
+
+    if not audio_files:
+        flash(
+            t()["no_source_files_message"],
+            "warning",
+        )
+
+        return redirect(
+            url_for(
+                "album_import_preview",
+                album_id=album_id,
+            )
+        )
 
     if not source_path.exists():
         return f"Source folder not found: {source_path}", 404

@@ -1,0 +1,183 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ tr.metadata_review }} - {{ tr.title }}</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="logo">◉ Lidarr Helper</div>
+
+        <a class="nav" href="{{ lidarr_url }}" target="_blank">
+          {{ tr.library }}
+        </a>
+
+        <a class="nav" href="/"> YouTube Helper </a>
+
+        <a class="nav" href="/downloads"> {{ tr.downloads }} </a>
+
+        <a class="nav active" href="/incomplete">
+          {{ tr.incomplete_albums }}
+        </a>
+
+        <a class="nav" href="/settings"> {{ tr.settings }} </a>
+      </aside>
+
+      <main class="content">
+        <h1>{{ tr.metadata_review }}</h1>
+
+        <div class="card">
+          <h2>{{ filename }}</h2>
+          <p><code>{{ source_path }}</code></p>
+        </div>
+
+        <div class="metadata-columns">
+          <div class="card">
+            <h2>{{ tr.current_metadata }}</h2>
+
+            <dl class="metadata-list">
+              <dt>{{ tr.artist }}</dt>
+              <dd>{{ current.artist or "-" }}</dd>
+
+              <dt>{{ tr.album_artist }}</dt>
+              <dd>{{ current.album_artist or "-" }}</dd>
+
+              <dt>{{ tr.album }}</dt>
+              <dd>{{ current.album or "-" }}</dd>
+
+              <dt>{{ tr.track_title }}</dt>
+              <dd>{{ current.title or "-" }}</dd>
+
+              <dt>{{ tr.track_number }}</dt>
+              <dd>{{ current.track or "-" }}</dd>
+
+              <dt>{{ tr.disc_number }}</dt>
+              <dd>{{ current.disc or "-" }}</dd>
+
+              <dt>{{ tr.year }}</dt>
+              <dd>{{ current.year or "-" }}</dd>
+
+              <dt>{{ tr.genre }}</dt>
+              <dd>{{ current.genre or "-" }}</dd>
+            </dl>
+          </div>
+
+          <div class="card best-match">
+            <h2>{{ tr.suggested_metadata }}</h2>
+
+            <form
+              method="post"
+              action="{{ url_for(
+                'manual_import_apply',
+                album_id=album.id
+              ) }}"
+            >
+              <input type="hidden" name="filename" value="{{ filename }}" />
+
+              <label>
+                {{ tr.artist }}
+                <input
+                  type="text"
+                  name="artist"
+                  value="{{ suggested.artist }}"
+                  required
+                />
+              </label>
+
+              <label>
+                {{ tr.album_artist }}
+                <input
+                  type="text"
+                  name="album_artist"
+                  value="{{ suggested.album_artist }}"
+                  required
+                />
+              </label>
+
+              <label>
+                {{ tr.album }}
+                <input
+                  type="text"
+                  name="album"
+                  value="{{ suggested.album }}"
+                  required
+                />
+              </label>
+
+              <label>
+                {{ tr.track_title }}
+                <input
+                  type="text"
+                  name="title"
+                  value="{{ suggested.title }}"
+                  required
+                />
+              </label>
+
+              <label>
+                {{ tr.track_number }}
+                <input
+                  type="number"
+                  name="track"
+                  min="1"
+                  value="{{ suggested.track }}"
+                />
+              </label>
+
+              <label>
+                {{ tr.disc_number }}
+                <input
+                  type="number"
+                  name="disc"
+                  min="1"
+                  value="{{ suggested.disc }}"
+                />
+              </label>
+
+              <label>
+                {{ tr.year }}
+                <input
+                  type="number"
+                  name="year"
+                  min="1000"
+                  max="9999"
+                  value="{{ suggested.year }}"
+                />
+              </label>
+
+              <label>
+                {{ tr.genre }}
+                <input type="text" name="genre" value="{{ suggested.genre }}" />
+              </label>
+
+              <label>
+                {{ tr.filename }}
+                <input
+                  type="text"
+                  name="destination_filename"
+                  value="{{ suggested.filename }}"
+                  required
+                />
+              </label>
+
+              <button type="submit">{{ tr.apply_metadata }}</button>
+            </form>
+          </div>
+        </div>
+
+        <a
+          class="button-link"
+          href="{{ url_for(
+            'album_import_preview',
+            album_id=album.id
+          ) }}"
+        >
+          {{ tr.back }}
+        </a>
+      </main>
+    </div>
+  </body>
+</html>

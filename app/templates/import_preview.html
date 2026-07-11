@@ -10,30 +10,36 @@
     <div class="layout">
       <aside class="sidebar">
         <div class="logo">◉ Lidarr Helper</div>
-        <a class="nav" href="{{ lidarr_url }}" target="_blank"
-          >{{ tr.library }}</a
-        >
+
+        <a class="nav" href="{{ lidarr_url }}" target="_blank">
+          {{ tr.library }}
+        </a>
+
         <a class="nav" href="/">YouTube Helper</a>
-        <a class="nav" href="/downloads">{{ tr.downloads }}</a>
-        <a class="nav active" href="/incomplete">{{ tr.incomplete_albums }}</a>
-        <a class="nav" href="{{ lidarr_url }}/wanted/missing" target="_blank"
-          >{{ tr.wanted }}</a
-        >
-        <a class="nav" href="/settings">{{ tr.settings }}</a>
+
+        <a class="nav" href="/downloads"> {{ tr.downloads }} </a>
+
+        <a class="nav active" href="/incomplete">
+          {{ tr.incomplete_albums }}
+        </a>
+
+        <a class="nav" href="{{ lidarr_url }}/wanted/missing" target="_blank">
+          {{ tr.wanted }}
+        </a>
+
+        <a class="nav" href="/settings"> {{ tr.settings }} </a>
       </aside>
 
       <main class="content">
-          {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-              <div class="flash-messages">
-                {% for category, message in messages %}
-                  <div class="flash-message flash-{{ category }}">
-                    {{ message }}
-                  </div>
-                {% endfor %}
-              </div>
-            {% endif %}
-          {% endwith %}
+        {% with messages = get_flashed_messages(with_categories=true) %} {% if
+        messages %}
+        <div class="flash-messages">
+          {% for category, message in messages %}
+          <div class="flash-message flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+        {% endif %} {% endwith %}
+
         <div class="card help-box">
           <h3>{{ tr.import_preview }}</h3>
           <p>{{ tr.import_preview_help }}</p>
@@ -41,16 +47,35 @@
 
         <div class="card">
           <h2>{{ tr.source_folder }}</h2>
-          <p><code>{{ source_path }}</code></p>
+
+          <p>
+            <code>{{ source_path }}</code>
+          </p>
 
           {% if source_exists %}
           <p class="status-success">{{ tr.source_found }}</p>
+
           <p>{{ tr.audio_files_found }}: {{ audio_files|length }}</p>
-          {% else %}
+
+          {% if audio_files %}
+          <div class="audio-file-list">
+            {% for audio_file in audio_files %}
+            <div class="audio-file-row">
+              <code>{{ audio_file.name }}</code>
+
+              <!-- prettier-ignore -->
+              <a class="button-link secondary" href="{{ url_for('manual_import_review', album_id=album.id, filename=audio_file.name) }}">
+                {{ tr.review_metadata }}
+              </a>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %} {% else %}
           <p class="status-failed">{{ tr.source_not_found }}</p>
           {% endif %}
         </div>
 
+        {% if source_exists and audio_files|length > 0 %}
         <div class="card">
           <h2>
             {{ tr.target_candidates }}
@@ -67,35 +92,57 @@
 
             <br />
 
-            <code>{{ candidate.path }}</code><br />
+            <code>{{ candidate.path }}</code>
+            <br />
 
             {{ tr.match_score }}: {{ candidate.score }}%
 
-            <form
-              method="post"
-              action="{{ url_for('album_import', album_id=album.id) }}"
-            >
-              <input
-                type="hidden"
-                name="target_path"
-                value="{{ candidate.path }}"
-              />
+            <!-- prettier-ignore -->
+            <form method="post" action="{{ url_for('album_import', album_id=album.id) }}">
+      <input
+        type="hidden"
+        name="target_path"
+        value="{{ candidate.path }}"
+      />
 
-              {% if loop.first %}
-              <button type="submit" {% if audio_files|length == 0 %}disabled{% endif %}>
-                {{ tr.prepare_for_import }}
-              </button>
-              {% else %}
-              <button type="submit" class="secondary" {% if audio_files|length == 0 %}disabled{% endif %}>
-                {{ tr.import_this_folder }}
-              </button>
-              {% endif %}
-            </form>
+      {% if loop.first %}
+      <button type="submit">
+        {{ tr.prepare_for_import }}
+      </button>
+      {% else %}
+      <button type="submit" class="secondary">
+        {{ tr.import_this_folder }}
+      </button>
+      {% endif %}
+    </form>
           </div>
           {% endfor %}
         </div>
-        <a class="button-link" href="/album/{{ album.id }}">{{ tr.back }}</a>
+        {% else %}
+        <div class="card">
+          <h2>{{ tr.no_source_files_title }}</h2>
+          <p>{{ tr.no_source_files_message }}</p>
+
+          <button
+            type="button"
+            class="secondary"
+            onclick="showNoSourceFilesMessage()"
+          >
+            {{ tr.prepare_for_import }}
+          </button>
+        </div>
+        {% endif %}
+
+        <!-- prettier-ignore -->
+        <a class="button-link" href="{{ url_for('album_details', album_id=album.id) }}">
+          {{ tr.back }}
+        </a>
       </main>
     </div>
+    <script>
+      function showNoSourceFilesMessage() {
+        alert({{ tr.no_source_files_message|tojson }});
+      }
+    </script>
   </body>
 </html>

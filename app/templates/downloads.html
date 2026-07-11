@@ -36,7 +36,25 @@
           </form>
 
           <ul class="queue-list">
-            ...
+            {% for item in queue %}
+            <li class="queue-item">
+              <strong>{{ item.key }}</strong><br />
+
+              <small>{{ tr.mode }}: {{ item.mode }}</small><br />
+
+              <small> {{ tr.target }}: {{ item.target }} </small><br />
+
+              <small>
+                <a
+                  href="{{ item.url }}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ item.url }}
+                </a>
+              </small>
+            </li>
+            {% endfor %}
           </ul>
           {% else %}
           <p class="muted">{{ tr.no_queued_downloads }}</p>
