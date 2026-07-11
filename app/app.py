@@ -1014,6 +1014,31 @@ def manual_import_execute(album_id):
     filename = request.form.get("filename", "").strip()
     replace_existing = request.form.get("replace_existing") == "1"
 
+    existing_track_file_id_value = request.form.get(
+        "existing_track_file_id",
+        "",
+    ).strip()
+
+    existing_track_file_id = None
+
+    if existing_track_file_id_value:
+        try:
+            existing_track_file_id = int(
+                existing_track_file_id_value
+            )
+        except ValueError:
+            flash(
+                "De bestaande Lidarr-trackfile-ID is ongeldig.",
+                "error",
+            )
+
+            return redirect(
+                url_for(
+                    "album_import_preview",
+                    album_id=album_id,
+                )
+            )
+
     if not filename:
         return "Filename missing", 400
 
@@ -1059,14 +1084,95 @@ def manual_import_execute(album_id):
             )
         )
 
+    existing_track_file = None
+
+    if existing_track_file_id is not None:
+        existing_track_file = find_matching_existing_track_file(
+            album_id=album_id,
+            track=track,
+            requested_track_file_id=existing_track_file_id,
+        )
+
+        if not existing_track_file:
+            flash(
+                "De opgegeven bestaande Lidarr-trackfile kon niet "
+                "veilig aan deze track worden gekoppeld.",
+                "error",
+            )
+
+            return redirect(
+                url_for(
+                    "album_import_preview",
+                    album_id=album_id,
+                )
+            )
+        
+    if replace_existing:
+        existing_track_file_id = existing_track_file["id"]
+
+        try:
+            delete_lidarr_track_file(
+                existing_track_file_id
+            )
+
+        except requests.RequestException as exc:
+            print(
+                f"[TRACK FILE DELETE] Failed: {exc}",
+                flush=True,
+            )
+
+            flash(
+                f"Het bestaande Lidarr-bestand kon niet "
+                f"worden verwijderd: {exc}",
+                "error",
+            )
+
+            return redirect(
+                url_for(
+                    "album_import_preview",
+                    album_id=album_id,
+                )
+            )        
+
+    print(
+        f"[MANUAL IMPORT EXECUTE] "
+        f"replace_existing={replace_existing}, "
+        f"existing_track_file_id={existing_track_file_id}, "
+        f"validated_track_file_id="
+        f"{existing_track_file.get('id') if existing_track_file else None}",
+        flush=True,
+    )
+
+    if replace_existing and not existing_track_file:
+        flash(
+            "Vervangen is aangevinkt, maar er is geen geldige "
+            "bestaande Lidarr-trackfile gevonden.",
+            "error",
+        )
+
+        return redirect(
+            url_for(
+                "album_import_preview",
+                album_id=album_id,
+            )
+        )
+
     all_candidates = get_lidarr_manual_import_candidates(
         source_path.parent
     )
+    if replace_existing and not existing_track_file:
+        flash(
+            "Vervangen is aangevinkt, maar er is geen geldige "
+            "bestaande Lidarr-trackfile gevonden.",
+            "error",
+        )
 
-    print(
-        f"[MANUAL IMPORT EXECUTE] replace_existing={replace_existing}",
-        flush=True,
-    )
+        return redirect(
+            url_for(
+                "album_import_preview",
+                album_id=album_id,
+            )
+        )
 
     manual_override = build_manual_import_override(
         candidates=all_candidates,
@@ -1414,7 +1520,87 @@ def get_lidarr_track_files(album_id):
             f"for albumId={album_id}: {exc}",
             flush=True,
         )
-        return []    
+        return []
+    
+def find_matching_existing_track_file(
+    album_id,
+    track,
+    requested_track_file_id=None,
+):
+    track_files = get_lidarr_track_files(album_id)
+
+    expected_track_number = get_track_number(track)
+    expected_title = normalize_match_text(
+        track.get("title", "")
+    )
+
+    for track_file in track_files:
+        track_file_id = track_file.get("id")
+
+        if (
+            requested_track_file_id is not None
+            and str(track_file_id) != str(requested_track_file_id)
+        ):
+            continue
+
+        track_file_path_value = track_file.get("path")
+
+        if not track_file_path_value:
+            continue
+
+        track_file_path = Path(track_file_path_value)
+        normalized_filename = normalize_match_text(
+            track_file_path.stem
+        )
+
+        number_matches = False
+
+        if expected_track_number is not None:
+            track_number_pattern = re.compile(
+                rf"(?:^|\s)0*{expected_track_number}(?:\s|$)"
+            )
+
+            number_matches = bool(
+                track_number_pattern.search(
+                    normalized_filename
+                )
+            )
+
+        title_matches = bool(
+            expected_title
+            and expected_title in normalized_filename
+        )
+
+        if number_matches and title_matches:
+            return track_file
+
+    return None
+
+def delete_lidarr_track_file(track_file_id):
+    response = requests.delete(
+        f"{LIDARR_URL}/api/v1/trackfile/{track_file_id}",
+        headers=HEADERS,
+        params={
+            "deleteFile": "true",
+        },
+        timeout=30,
+    )
+
+    print(
+        f"[TRACK FILE DELETE] "
+        f"trackFileId={track_file_id}, "
+        f"status={response.status_code}",
+        flush=True,
+    )
+
+    if not response.ok:
+        print(
+            f"[TRACK FILE DELETE] Error response: "
+            f"{response.text[:2000]}",
+            flush=True,
+        )
+
+    response.raise_for_status() 
 
 @app.route("/album/<int:album_id>/import-preview")
 def album_import_preview(album_id):
@@ -1450,19 +1636,12 @@ def album_import_preview(album_id):
     audio_files = get_audio_files(source_path)
     import_items = []
     track_files = get_lidarr_track_files(album_id)
-    
+
     print(
-        f"[TRACK FILES] albumId={album_id}, count={len(track_files)}",
+        f"[TRACK FILES] albumId={album_id}, "
+        f"count={len(track_files)}",
         flush=True,
     )
-
-    for track_file in track_files:
-        print(
-            f"[TRACK FILES] id={track_file.get('id')}, "
-            f"trackIds={track_file.get('trackIds')}, "
-            f"path={track_file.get('path')}",
-            flush=True,
-        )   
 
     for file_path in audio_files:
         track = find_track_for_file(
@@ -1474,57 +1653,60 @@ def album_import_preview(album_id):
         track_file_id = 0
         track_already_imported = False
 
-    if track:
-        expected_track_number = get_track_number(track)
-        expected_title = normalize_match_text(
-            track.get("title", "")
-        )
-
-        for track_file in track_files:
-            track_file_path_value = track_file.get("path")
-
-            if not track_file_path_value:
-                continue
-
-            track_file_path = Path(track_file_path_value)
-
-            existing_filename = normalize_match_text(
-                track_file_path.stem
+        if track:
+            expected_track_number = get_track_number(track)
+            expected_title = normalize_match_text(
+                track.get("title", "")
             )
 
-            track_number_pattern = re.compile(
-                rf"(?:^|\s){expected_track_number:02d}(?:\s|$)"
-            )
+            for track_file in track_files:
+                track_file_path_value = track_file.get("path")
 
-            number_matches = bool(
-                track_number_pattern.search(existing_filename)
-            )
+                if not track_file_path_value:
+                    continue
 
-            title_matches = (
-                expected_title
-                and expected_title in existing_filename
-            )
-
-            if number_matches and title_matches:
-                track_file_id = track_file.get("id") or 0
-                track_already_imported = True
-
-                print(
-                    f"[TRACK FILE CHECK] Existing file matched: "
-                    f"{track_file_path}",
-                    flush=True,
+                track_file_path = Path(
+                    track_file_path_value
                 )
 
-                break
+                existing_filename = normalize_match_text(
+                    track_file_path.stem
+                )
 
-        print(
-            f"[TRACK FILE CHECK] "
-            f"trackId={track.get('id') if track else None}, "
-            f"trackNumber={get_track_number(track) if track else None}, "
-            f"trackFileId={track_file_id}, "
-            f"alreadyImported={track_already_imported}",
-            flush=True,
-        )
+                number_matches = False
+
+                if expected_track_number is not None:
+                    track_number_pattern = re.compile(
+                        rf"(?:^|\s)0*"
+                        rf"{expected_track_number}"
+                        rf"(?:\s|$)"
+                    )
+
+                    number_matches = bool(
+                        track_number_pattern.search(
+                            existing_filename
+                        )
+                    )
+
+                title_matches = bool(
+                    expected_title
+                    and expected_title in existing_filename
+                )
+
+                if number_matches and title_matches:
+                    track_file_id = (
+                        track_file.get("id") or 0
+                    )
+                    track_already_imported = True
+
+                    print(
+                        "[TRACK FILE CHECK] "
+                        f"Existing file matched: "
+                        f"{track_file_path}",
+                        flush=True,
+                    )
+
+                    break
 
         current_metadata = read_audio_metadata(
             file_path

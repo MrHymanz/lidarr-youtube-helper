@@ -237,8 +237,13 @@
                 name="filename"
                 value="{{ item.filename }}"
               />
-
-              {% if item.track_already_imported %}
+              {% if item.track_already_imported and item.track_file_id %}
+              <input
+                type="hidden"
+                name="existing_track_file_id"
+                value="{{ item.track_file_id }}"
+              />
+              {% endif %} {% if item.track_already_imported %}
               <div class="flash-message flash-warning">
                 {{ tr.track_already_exists }}
               </div>
