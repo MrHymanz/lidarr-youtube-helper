@@ -5,6 +5,7 @@ import difflib
 import shutil
 import re
 import unicodedata
+import time
 from pathlib import Path
 from datetime import datetime
 
@@ -110,8 +111,6 @@ TRANSLATIONS = {
         "back": "Back",
         "best_match": "Best Match",
         "recommended": "Recommended",
-        "import_recommended_folder": "Import to recommended folder",
-        "import_this_folder": "Import to this folder",
         "audio_files_found": "Audio files found",
         "import_success": "Import completed",
         "import_moved_files": "{count} audio file(s) imported.",
@@ -121,9 +120,6 @@ TRANSLATIONS = {
         "lidarr_scan_failed": "Files were imported, but the Lidarr refresh failed.",
         "metadata_failed_files": "{count} file(s) could not be processed because metadata normalization failed.",
         "track_match_failed_files": "{count} file(s) could not be matched to a Lidarr track.",
-        "prepare_import_success": "{count} audio file(s) prepared for Lidarr manual import.",
-        "prepare_import_no_files": "No audio files were prepared.",
-        "prepare_for_import": "Prepare files for Lidarr import",
         "review_metadata": "Review metadata",
         "metadata_review": "Metadata review",
         "current_metadata": "Current metadata",
@@ -143,6 +139,46 @@ TRANSLATIONS = {
         "no_source_files_title": "Nothing to prepare",
         "no_source_files_message": "No downloaded audio files are available for this album yet. Add a missing track to the queue and complete the download first.",
         "target": "Target",
+        "lidarr_import_check": "Lidarr import check",
+        "lidarr_candidates_found": "Import candidates found",
+        "lidarr_rejections": "Lidarr rejected this candidate",
+        "lidarr_candidate_ready": "Lidarr considers this candidate ready for import.",
+        "no_lidarr_candidates": "Lidarr did not return any import candidates.",
+        "show_raw_response": "Show technical details",
+        "lidarr_candidates_filtered": "{shown} of {total} candidates belong to this album.",
+        "manual_override_required": "Lidarr did not automatically select this album. A manual album and track override has been prepared.",
+        "manual_override_preview": "Manual import mapping",
+        "lidarr_import_accepted": "Lidarr heeft de importopdracht geaccepteerd. De verwerking wordt nog gecontroleerd.",
+        "go_to_downloads": "Go to downloads",
+        "import_via_lidarr": "Import via Lidarr",
+        "review_import_downloads": "Review and import downloads",
+        "review_import_downloads_help": (
+            "Review downloaded audio files, correct metadata, "
+            "match them to Lidarr tracks and import them through Lidarr."
+        ),
+        "import_workflow": "Download review and import",
+        "import_workflow_help": (
+            "Review downloaded files, correct their metadata and import them "
+            "into the selected Lidarr album."
+        ),
+        "lidarr_import_completed": (
+            "Import completed: {filename} was imported by Lidarr."
+        ),
+        "lidarr_import_failed": (
+            "The Lidarr import failed."
+        ),
+        "lidarr_import_completed_source_remaining": (
+            "Lidarr completed the import command, but the source file "
+            "is still present in the download folder."
+        ),
+        "lidarr_import_still_processing": (
+            "Lidarr is still processing the import. Refresh this page in a few seconds."
+        ),
+        "track_already_exists": (
+            "This track already has a file in Lidarr. "
+            "A normal import will keep the existing file."
+        ),
+        "replace_existing_file": "Replace the existing file",
     },
     "nl": {
         "language_name": "Nederlands",
@@ -225,8 +261,6 @@ TRANSLATIONS = {
         "back": "Terug",
         "best_match": "Beste match",
         "recommended": "Aanbevolen",
-        "import_recommended_folder": "Importeer naar aanbevolen map",
-        "import_this_folder": "Importeer naar deze map",
         "audio_files_found": "Audiobestanden gevonden",
         "import_success": "Import voltooid",
         "import_moved_files": "{count} audiobestand(en) geïmporteerd.",
@@ -236,9 +270,6 @@ TRANSLATIONS = {
         "lidarr_scan_failed": "De bestanden zijn geïmporteerd, maar de Lidarr-verversing is mislukt.",
         "metadata_failed_files": "{count} bestand(en) konden niet worden verwerkt doordat de metadata-aanpassing mislukte.",
         "track_match_failed_files": "{count} bestand(en) konden niet aan een Lidarr-track worden gekoppeld.",
-        "prepare_import_success": "{count} audiobestand(en) voorbereid voor handmatige Lidarr-import.",
-        "prepare_import_no_files": "Er zijn geen audiobestanden voorbereid.",
-        "prepare_for_import": "Bestanden voorbereiden voor Lidarr-import",
         "review_metadata": "Metadata controleren",
         "metadata_review": "Metadata controleren",
         "current_metadata": "Huidige metadata",
@@ -258,6 +289,46 @@ TRANSLATIONS = {
         "no_source_files_title": "Niets om voor te bereiden",
         "no_source_files_message": "Er zijn nog geen gedownloade audiobestanden voor dit album. Voeg eerst een ontbrekend nummer toe aan de wachtrij en rond de download af.",
         "target": "Doel",
+        "lidarr_import_check": "Lidarr-importcontrole",
+        "lidarr_candidates_found": "Importkandidaten gevonden",
+        "lidarr_rejections": "Lidarr heeft deze kandidaat afgewezen",
+        "lidarr_candidate_ready": "Lidarr beschouwt deze kandidaat als gereed voor import.",
+        "no_lidarr_candidates": "Lidarr heeft geen importkandidaten teruggegeven.",
+        "show_raw_response": "Technische details tonen",
+        "lidarr_candidates_filtered": "{shown} van de {total} kandidaten horen bij dit album.",
+        "manual_override_required": "Lidarr heeft dit album niet automatisch geselecteerd. Er is een handmatige album- en trackkoppeling voorbereid.",
+        "manual_override_preview": "Handmatige importkoppeling",
+        "lidarr_import_accepted": "Lidarr accepted the import request. Processing still needs to be verified.",
+        "go_to_downloads": "Naar downloads",
+        "import_via_lidarr": "Importeren via Lidarr",
+        "review_import_downloads": "Downloads controleren en importeren",
+        "review_import_downloads_help": (
+            "Controleer gedownloade audiobestanden, pas metadata aan, "
+            "koppel ze aan Lidarr-tracks en importeer ze via Lidarr."
+        ),
+        "import_workflow": "Downloads controleren en importeren",
+        "import_workflow_help": (
+            "Controleer gedownloade bestanden, corrigeer de metadata en "
+            "importeer ze in het geselecteerde Lidarr-album."
+        ),
+        "lidarr_import_completed": (
+            "Import voltooid: {filename} is door Lidarr geïmporteerd."
+        ),
+        "lidarr_import_failed": (
+            "De Lidarr-import is mislukt."
+        ),
+        "lidarr_import_completed_source_remaining": (
+            "Lidarr heeft de importopdracht voltooid, maar het bronbestand "
+            "staat nog in de downloadmap."
+        ),
+        "lidarr_import_still_processing": (
+            "Lidarr verwerkt de import nog. Vernieuw deze pagina over enkele seconden."
+        ),
+        "track_already_exists": (
+            "Deze track heeft al een bestand in Lidarr. "
+            "Een normale import laat het bestaande bestand staan."
+        ),
+        "replace_existing_file": "Bestaand bestand vervangen",
     },
     "no": {
         "language_name": "Norsk",
@@ -338,8 +409,6 @@ TRANSLATIONS = {
         "no_target_candidates": "Ingen målmapper funnet.",
         "best_match": "Beste treff",
         "recommended": "Anbefalt",
-        "import_recommended_folder": "Importer til anbefalt mappe",
-        "import_this_folder": "Importer til denne mappen",
         "audio_files_found": "Lydfiler funnet",
         "import_success": "Import fullført",
         "import_moved_files": "{count} lydfil(er) importert.",
@@ -349,9 +418,6 @@ TRANSLATIONS = {
         "lidarr_scan_failed": "Filene ble importert, men Lidarr-oppdateringen mislyktes.",
         "metadata_failed_files": "{count} fil(er) kunne ikke behandles fordi metadataoppdateringen mislyktes.",
         "track_match_failed_files": "{count} fil(er) kunne ikke kobles til et Lidarr-spor.",
-        "prepare_import_success": "{count} lydfil(er) klargjort for manuell import i Lidarr.",
-        "prepare_import_no_files": "Ingen lydfiler ble klargjort.",
-        "prepare_for_import": "Klargjør filer for import i Lidarr",
         "review_metadata": "Kontroller metadata",
         "metadata_review": "Metadatakontroll",
         "current_metadata": "Nåværende metadata",
@@ -371,6 +437,46 @@ TRANSLATIONS = {
         "no_source_files_title": "Ingenting å klargjøre",
         "no_source_files_message": "Det finnes ingen nedlastede lydfiler for dette albumet ennå. Legg først et manglende spor i køen og fullfør nedlastingen.",
         "target": "Mål",
+        "lidarr_import_check": "Lidarr-importkontroll",
+        "lidarr_candidates_found": "Importkandidater funnet",
+        "lidarr_rejections": "Lidarr avviste denne kandidaten",
+        "lidarr_candidate_ready": "Lidarr vurderer kandidaten som klar for import.",
+        "no_lidarr_candidates": "Lidarr returnerte ingen importkandidater.",
+        "show_raw_response": "Vis tekniske detaljer",
+        "lidarr_candidates_filtered": "{shown} av {total} kandidater tilhører dette albumet.",
+        "manual_override_required": "Lidarr valgte ikke dette albumet automatisk. En manuell album- og sporkobling er klargjort.",
+        "manual_override_preview": "Manuell importkobling",
+        "lidarr_import_accepted": "Lidarr godtok importforespørselen. Behandlingen må fortsatt kontrolleres.",
+        "go_to_downloads": "Gå til nedlastinger",
+        "import_via_lidarr": "Importer via Lidarr",
+        "review_import_downloads": "Kontroller og importer nedlastinger",
+        "review_import_downloads_help": (
+            "Kontroller nedlastede lydfiler, korriger metadata, "
+            "koble dem til Lidarr-spor og importer dem via Lidarr."
+        ),
+        "import_workflow": "Kontroller og importer nedlastinger",
+        "import_workflow_help": (
+            "Kontroller nedlastede filer, korriger metadata og importer dem "
+            "til det valgte Lidarr-albumet."
+        ),
+        "lidarr_import_completed": (
+            "Import fullført: {filename} ble importert av Lidarr."
+        ),
+        "lidarr_import_failed": (
+            "Lidarr-importen mislyktes."
+        ),
+        "lidarr_import_completed_source_remaining": (
+            "Lidarr fullførte importkommandoen, men kildefilen "
+            "finnes fortsatt i nedlastingsmappen."
+        ),
+        "lidarr_import_still_processing": (
+            "Lidarr behandler fortsatt importen. Oppdater siden om noen sekunder."
+        ),
+        "track_already_exists": (
+            "Dette sporet har allerede en fil i Lidarr. "
+            "En vanlig import beholder den eksisterende filen."
+        ),
+        "replace_existing_file": "Erstatt den eksisterende filen",
     },
 }
 
@@ -896,30 +1002,29 @@ def build_suggested_metadata(album, track, file_path):
     }
 
 @app.route(
-    "/album/<int:album_id>/manual-import-review/<path:filename>"
+    "/album/<int:album_id>/manual-import-execute",
+    methods=["POST"],
 )
-def manual_import_review(album_id, filename):
+def manual_import_execute(album_id):
     album, tracks = get_album_details(album_id)
 
     if not album:
         return "Album not found", 404
 
+    filename = request.form.get("filename", "").strip()
+    replace_existing = request.form.get("replace_existing") == "1"
+
+    if not filename:
+        return "Filename missing", 400
+
     artist_value = album.get("artist")
 
     if isinstance(artist_value, dict):
-        artist_name = artist_value.get(
-            "artistName",
-            "Unknown Artist",
-        )
+        artist_name = artist_value.get("artistName", "Unknown Artist")
     else:
-        artist_name = str(
-            artist_value or "Unknown Artist"
-        )
-
-    album_title = album.get(
-        "title",
-        "Unknown Album",
-    )
+        artist_name = str(artist_value or "Unknown Artist")
+        
+    album_title = album.get("title") or "Unknown Album"
 
     source_path = (
         DOWNLOAD_DIR
@@ -928,23 +1033,23 @@ def manual_import_review(album_id, filename):
     )
 
     if not source_path.exists():
-        return (
-            f"Audio file not found: {source_path}",
-            404,
+        flash(
+            f"Bronbestand niet gevonden: {source_path}",
+            "error",
+        )
+        return redirect(
+            url_for(
+                "album_import_preview",
+                album_id=album_id,
+            )
         )
 
-    track = find_track_for_file(
-        file_path=source_path,
-        tracks=tracks,
-        album_id=album_id,
-    )
+    track = find_track_for_file(source_path, tracks)
 
     if not track:
         flash(
-            t()["track_match_failed_files"].format(
-                count=1
-            ),
-            "warning",
+            "Het bestand kon niet aan een Lidarr-track worden gekoppeld.",
+            "error",
         )
 
         return redirect(
@@ -954,26 +1059,120 @@ def manual_import_review(album_id, filename):
             )
         )
 
-    current_metadata = read_audio_metadata(
-        source_path
+    all_candidates = get_lidarr_manual_import_candidates(
+        source_path.parent
     )
 
-    suggested_metadata = build_suggested_metadata(
-        album=album,
-        track=track,
-        file_path=source_path,
+    print(
+        f"[MANUAL IMPORT EXECUTE] replace_existing={replace_existing}",
+        flush=True,
     )
 
-    return render_template(
-        "manual_import_review.html",
-        tr=t(),
+    manual_override = build_manual_import_override(
+        candidates=all_candidates,
         album=album,
         track=track,
-        source_path=str(source_path),
-        filename=filename,
-        current=current_metadata,
-        suggested=suggested_metadata,
-        lidarr_url=LIDARR_URL,
+        source_path=source_path,
+        replace_existing=replace_existing,
+    )
+
+    if not manual_override:
+        flash(
+            "Er kon geen handmatige Lidarr-import worden opgebouwd.",
+            "error",
+        )
+
+        return redirect(
+            url_for(
+                "album_import_preview",
+                album_id=album_id,
+            )
+        )
+
+    try:
+        updated_items = update_lidarr_manual_import(
+            manual_override
+        )
+
+        command = start_lidarr_manual_import(
+            updated_items=updated_items,
+            import_mode="Move",
+        )
+
+        command_id = command.get("id")
+
+        if not command_id:
+            raise ValueError(
+                "Lidarr returned no command ID for the manual import"
+            )
+
+        print(
+            f"[MANUAL IMPORT COMMAND] Started commandId={command_id}",
+            flush=True,
+        )
+
+        import_result = wait_for_lidarr_import(
+            command_id=command_id,
+            source_path=source_path,
+        )
+
+    except (requests.RequestException, ValueError, KeyError) as exc:
+        print(
+            f"[MANUAL IMPORT EXECUTE] Failed: {exc}",
+            flush=True,
+        )
+
+        flash(
+            f"Lidarr-import mislukt: {exc}",
+            "error",
+        )
+
+        return redirect(
+            url_for(
+                "album_import_preview",
+                album_id=album_id,
+            )
+        )
+
+    translation = t()
+    result_status = import_result["status"]
+
+    if result_status == "completed":
+        flash(
+            translation["lidarr_import_completed"].format(
+                filename=filename
+            ),
+            "success",
+        )
+
+    elif result_status == "failed":
+        error_message = (
+            import_result.get("command", {}).get("message")
+            or translation["lidarr_import_failed"]
+        )
+
+        flash(
+            error_message,
+            "error",
+        )
+
+    elif result_status == "completed_source_remaining":
+        flash(
+            translation["lidarr_import_completed_source_remaining"],
+            "warning",
+        )
+
+    else:
+        flash(
+            translation["lidarr_import_still_processing"],
+            "warning",
+        )
+
+    return redirect(
+        url_for(
+            "album_import_preview",
+            album_id=album_id,
+        )
     )
 
 def apply_custom_metadata(file_path, metadata):
@@ -1096,9 +1295,16 @@ def manual_import_apply(album_id):
     )
 
     if not source_path.exists():
-        return (
+        flash(
             f"Audio file not found: {source_path}",
-            404,
+            "error",
+        )
+
+        return redirect(
+            url_for(
+                "album_import_preview",
+                album_id=album_id,
+            )
         )
 
     metadata = {
@@ -1156,9 +1362,8 @@ def manual_import_apply(album_id):
 
         return redirect(
             url_for(
-                "manual_import_review",
+                "album_import_preview",
                 album_id=album_id,
-                filename=filename,
             )
         )
 
@@ -1180,37 +1385,213 @@ def manual_import_apply(album_id):
 
     return redirect(
         url_for(
-            "manual_import_review",
+            "album_import_preview",
             album_id=album_id,
-            filename=destination_path.name,
         )
     )
 
-@app.route("/album/<album_id>/import-preview")
+def get_lidarr_track_files(album_id):
+    try:
+        response = requests.get(
+            f"{LIDARR_URL}/api/v1/trackfile",
+            headers=HEADERS,
+            params={"albumId": album_id},
+            timeout=30,
+        )
+
+        response.raise_for_status()
+
+        track_files = response.json()
+
+        if not isinstance(track_files, list):
+            return []
+
+        return track_files
+
+    except (requests.RequestException, ValueError) as exc:
+        print(
+            f"[TRACK FILES] Could not load track files "
+            f"for albumId={album_id}: {exc}",
+            flush=True,
+        )
+        return []    
+
+@app.route("/album/<int:album_id>/import-preview")
 def album_import_preview(album_id):
     print("[IMPORT PREVIEW] route called", flush=True)
+
     album, tracks = get_album_details(album_id)
 
     if not album:
         return "Album not found", 404
 
-    artist = album.get("artist", {}).get("artistName", "Unknown Artist")
-    album_title = album.get("title", "Unknown Album")
+    artist_value = album.get("artist")
 
-    source_path = DOWNLOAD_DIR / f"{artist} - {album_title}"
+    if isinstance(artist_value, dict):
+        artist_name = artist_value.get(
+            "artistName",
+            "Unknown Artist",
+        )
+    else:
+        artist_name = str(
+            artist_value or "Unknown Artist"
+        )
+
+    album_title = album.get(
+        "title",
+        "Unknown Album",
+    )
+
+    source_path = (
+        DOWNLOAD_DIR
+        / f"{artist_name} - {album_title}"
+    )
+
     audio_files = get_audio_files(source_path)
-    candidates = find_album_target_candidates(album)
+    import_items = []
+    track_files = get_lidarr_track_files(album_id)
+    
+    print(
+        f"[TRACK FILES] albumId={album_id}, count={len(track_files)}",
+        flush=True,
+    )
+
+    for track_file in track_files:
+        print(
+            f"[TRACK FILES] id={track_file.get('id')}, "
+            f"trackIds={track_file.get('trackIds')}, "
+            f"path={track_file.get('path')}",
+            flush=True,
+        )   
+
+    for file_path in audio_files:
+        track = find_track_for_file(
+            file_path=file_path,
+            tracks=tracks,
+            album_id=album_id,
+        )
+
+        track_file_id = 0
+        track_already_imported = False
+
+    if track:
+        expected_track_number = get_track_number(track)
+        expected_title = normalize_match_text(
+            track.get("title", "")
+        )
+
+        for track_file in track_files:
+            track_file_path_value = track_file.get("path")
+
+            if not track_file_path_value:
+                continue
+
+            track_file_path = Path(track_file_path_value)
+
+            existing_filename = normalize_match_text(
+                track_file_path.stem
+            )
+
+            track_number_pattern = re.compile(
+                rf"(?:^|\s){expected_track_number:02d}(?:\s|$)"
+            )
+
+            number_matches = bool(
+                track_number_pattern.search(existing_filename)
+            )
+
+            title_matches = (
+                expected_title
+                and expected_title in existing_filename
+            )
+
+            if number_matches and title_matches:
+                track_file_id = track_file.get("id") or 0
+                track_already_imported = True
+
+                print(
+                    f"[TRACK FILE CHECK] Existing file matched: "
+                    f"{track_file_path}",
+                    flush=True,
+                )
+
+                break
+
+        print(
+            f"[TRACK FILE CHECK] "
+            f"trackId={track.get('id') if track else None}, "
+            f"trackNumber={get_track_number(track) if track else None}, "
+            f"trackFileId={track_file_id}, "
+            f"alreadyImported={track_already_imported}",
+            flush=True,
+        )
+
+        current_metadata = read_audio_metadata(
+            file_path
+        )
+
+        suggested_metadata = None
+        manual_override = None
+        all_lidarr_candidates = []
+
+        if track:
+            suggested_metadata = build_suggested_metadata(
+                album=album,
+                track=track,
+                file_path=file_path,
+            )
+
+            all_lidarr_candidates = (
+                get_lidarr_manual_import_candidates(
+                    file_path.parent
+                )
+            )
+
+            matching_candidates = (
+                filter_manual_import_candidates(
+                    candidates=all_lidarr_candidates,
+                    album_id=album_id,
+                    file_path=file_path,
+                )
+            )
+
+            if matching_candidates:
+                manual_override = matching_candidates[0]
+
+            elif all_lidarr_candidates:
+                manual_override = build_manual_import_override(
+                    candidates=all_lidarr_candidates,
+                    album=album,
+                    track=track,
+                    source_path=file_path,
+                )
+
+        import_items.append({
+            "filename": file_path.name,
+            "path": str(file_path),
+            "track": track,
+            "current": current_metadata,
+            "suggested": suggested_metadata,
+            "manual_override": manual_override,
+            "candidate_count": len(
+                all_lidarr_candidates
+            ),
+            "track_file_id": track_file_id,
+            "track_already_imported": (
+                track_already_imported
+            ),
+        })
 
     return render_template(
         "import_preview.html",
         tr=t(),
         album=album,
-        artist=artist,
+        artist=artist_name,
         album_title=album_title,
         source_path=str(source_path),
         source_exists=source_path.exists(),
         audio_files=audio_files,
-        candidates=candidates,
+        import_items=import_items,
         lidarr_url=LIDARR_URL,
     )
 
@@ -1494,159 +1875,324 @@ def normalize_audio_metadata(
 
     return False
 
-@app.route("/album/<int:album_id>/import", methods=["POST"])
-def album_import(album_id):
-    album, tracks = get_album_details(album_id)
-
-    if not album:
-        return "Album not found", 404
-
-    artist_data = album.get("artist")
-
-    if isinstance(artist_data, dict):
-        artist_name = artist_data.get("artistName", "Unknown Artist")
-    else:
-        artist_name = str(artist_data or "Unknown Artist")
-
-    album_title = album.get("title", "Unknown Album")
-    release_year = (album.get("releaseDate") or "")[:4]
-
-    source_path = DOWNLOAD_DIR / f"{artist_name} - {album_title}"
-    audio_files = get_audio_files(source_path)
-
-    if not audio_files:
-        flash(
-            t()["no_source_files_message"],
-            "warning",
-        )
-
-        return redirect(
-            url_for(
-                "album_import_preview",
-                album_id=album_id,
-            )
-        )
-
-    if not source_path.exists():
-        return f"Source folder not found: {source_path}", 404
-
-    audio_extensions = {
-        ".mp3",
-        ".m4a",
-        ".flac",
-        ".ogg",
-        ".opus",
-        ".wav",
+def get_lidarr_manual_import_candidates(folder_path):
+    params = {
+        "folder": str(folder_path),
+        "filterExistingFiles": "true",
+        "replaceExistingFiles": "false",
     }
 
-    prepared = []
-    metadata_failed = []
-    track_match_failed = []
-
-    for file in source_path.iterdir():
-        if not file.is_file():
-            continue
-
-        if file.suffix.lower() not in audio_extensions:
-            continue
-
-        track = find_track_for_file(
-            file_path=file,
-            tracks=tracks,
-            album_id=album_id,
+    try:
+        response = requests.get(
+            f"{LIDARR_URL}/api/v1/manualimport",
+            headers=HEADERS,
+            params=params,
+            timeout=60,
         )
+        response.raise_for_status()
 
-        if not track:
-            track_match_failed.append(file.name)
+        candidates = response.json()
 
+        if not isinstance(candidates, list):
             print(
-                f"[PREPARE] No reliable Lidarr track match: {file.name}",
+                f"[MANUAL IMPORT] Unexpected response type: "
+                f"{type(candidates).__name__}",
                 flush=True,
             )
-            continue
-
-        metadata_ok = normalize_audio_metadata(
-            file_path=file,
-            artist_name=artist_name,
-            album_title=album_title,
-            release_year=release_year,
-            track=track,
-        )
-
-        if not metadata_ok:
-            metadata_failed.append(file.name)
-
-            print(
-                f"[PREPARE] Metadata update failed: {file.name}",
-                flush=True,
-            )
-            continue
-
-        track_number = get_track_number(track)
-        track_title = str(track.get("title") or file.stem).strip()
-
-        if track_number is not None:
-            prepared_name = (
-                f"{track_number:02d}. "
-                f"{track_title}"
-                f"{file.suffix.lower()}"
-            )
-        else:
-            prepared_name = file.name
-
-        prepared_path = source_path / prepared_name
-
-        if prepared_path != file:
-            if prepared_path.exists():
-                prepared_path.unlink()
-
-            file.rename(prepared_path)
-
-        prepared.append(prepared_path.name)
+            return []
 
         print(
-            f"[PREPARE] Ready for Lidarr manual import: "
-            f"{prepared_path}",
+            f"[MANUAL IMPORT] Lidarr returned "
+            f"{len(candidates)} candidate(s) for {folder_path}",
             flush=True,
         )
 
-    translation = t()
+        return candidates
 
-    if prepared:
-        flash(
-            translation["prepare_import_success"].format(
-                count=len(prepared)
-            ),
-            "success",
+    except (requests.RequestException, ValueError, KeyError) as exc:
+        print(
+            f"[MANUAL IMPORT] Request failed for {folder_path}: {exc}",
+            flush=True,
         )
-    else:
-        flash(
-            translation["prepare_import_no_files"],
-            "warning",
-        )
+        return []
 
-    if track_match_failed:
-        flash(
-            translation["track_match_failed_files"].format(
-                count=len(track_match_failed)
-            ),
-            "warning",
+    except ValueError as exc:
+        print(
+            f"[MANUAL IMPORT] Invalid JSON returned by Lidarr: {exc}",
+            flush=True,
         )
+        return []
 
-    if metadata_failed:
-        flash(
-            translation["metadata_failed_files"].format(
-                count=len(metadata_failed)
-            ),
-            "error",
-        )
+def filter_manual_import_candidates(candidates, album_id, file_path=None):
+    matching = []
 
-    return redirect(
-        url_for(
-            "album_import_preview",
-            album_id=album_id,
-        )
+    for candidate in candidates:
+        candidate_album = candidate.get("album") or {}
+        candidate_album_id = candidate_album.get("id")
+
+        if str(candidate_album_id) != str(album_id):
+            continue
+
+        if file_path is not None:
+            candidate_path = candidate.get("path")
+
+            if candidate_path and Path(candidate_path) != Path(file_path):
+                continue
+
+        matching.append(candidate)
+
+    print(
+        f"[MANUAL IMPORT] Filtered {len(candidates)} candidate(s) "
+        f"to {len(matching)} candidate(s) for albumId={album_id}",
+        flush=True,
     )
+
+    return matching
+    
+def build_manual_import_override(
+    candidates,
+    album,
+    track,
+    source_path,
+    replace_existing=False,
+):
+    source_candidate = next(
+        (
+            candidate
+            for candidate in candidates
+            if Path(candidate.get("path", "")) == Path(source_path)
+        ),
+        candidates[0] if candidates else None,
+    )
+
+    if not source_candidate:
+        return None
+
+    releases = album.get("releases") or []
+
+    selected_release = next(
+        (
+            release
+            for release in releases
+            if release.get("monitored")
+        ),
+        releases[0] if releases else None,
+    )
+
+    track_number = get_track_number(track)
+
+    override = {
+        "id": source_candidate.get("id"),
+        "path": source_candidate.get("path"),
+        "name": source_candidate.get("name"),
+        "size": source_candidate.get("size"),
+        "quality": source_candidate.get("quality"),
+        "audioTags": source_candidate.get("audioTags"),
+        "artist": album.get("artist"),
+        "album": album,
+        "albumId": album.get("id"),
+        "albumReleaseId": (
+            selected_release.get("id")
+            if selected_release
+            else None
+        ),
+        "tracks": [
+            {
+                "id": track.get("id"),
+                "title": track.get("title"),
+                "trackNumber": (
+                    str(track_number)
+                    if track_number is not None
+                    else ""
+                ),
+                "albumId": track.get("albumId"),
+                "artistId": track.get("artistId"),
+            }
+        ],
+        "replaceExistingFiles": replace_existing,
+        "rejections": [],
+    }
+
+    print(
+        f"[MANUAL IMPORT OVERRIDE] Prepared override for "
+        f"albumId={album.get('id')}, "
+        f"albumReleaseId={override['albumReleaseId']}, "
+        f"trackId={track.get('id')}",
+        flush=True,
+    )
+    print(
+        f"[MANUAL IMPORT OVERRIDE] "
+        f"replaceExistingFiles={replace_existing}",
+        flush=True,
+    )
+    return override
+
+def update_lidarr_manual_import(manual_import_item):
+    response = requests.post(
+        f"{LIDARR_URL}/api/v1/manualimport",
+        headers=HEADERS,
+        json=[manual_import_item],
+        timeout=30,
+    )
+
+    print(
+        f"[MANUAL IMPORT UPDATE] Response status: {response.status_code}",
+        flush=True,
+    )
+
+    if not response.ok:
+        print(
+            f"[MANUAL IMPORT UPDATE] Error response: "
+            f"{response.text[:2000]}",
+            flush=True,
+        )
+
+    response.raise_for_status()
+
+    updated_items = response.json()
+
+    if not isinstance(updated_items, list) or not updated_items:
+        raise ValueError(
+            "Lidarr returned no updated manual-import items"
+        )
+
+    return updated_items
+
+def start_lidarr_manual_import(updated_items, import_mode="Move"):
+    files = []
+
+    for item in updated_items:
+        files.append({
+            "path": item["path"],
+            "artistId": item["artist"]["id"],
+            "albumId": item["album"]["id"],
+            "albumReleaseId": item["albumReleaseId"],
+            "trackIds": [
+                track["id"]
+                for track in item.get("tracks", [])
+            ],
+            "quality": item["quality"],
+            "disableReleaseSwitching": item.get(
+                "disableReleaseSwitching",
+                False,
+            ),
+            "replaceExistingFiles": item.get(
+                "replaceExistingFiles",
+                False,
+            ),
+        })
+
+    payload = {
+        "name": "ManualImport",
+        "files": files,
+        "importMode": import_mode,
+    }
+
+    response = requests.post(
+        f"{LIDARR_URL}/api/v1/command",
+        headers=HEADERS,
+        json=payload,
+        timeout=30,
+    )
+
+    print(
+        f"[MANUAL IMPORT COMMAND] Response status: "
+        f"{response.status_code}",
+        flush=True,
+    )
+
+    if not response.ok:
+        print(
+            f"[MANUAL IMPORT COMMAND] Error response: "
+            f"{response.text[:2000]}",
+            flush=True,
+        )
+
+    response.raise_for_status()
+    return response.json()
+
+def get_lidarr_command(command_id):
+    response = requests.get(
+        f"{LIDARR_URL}/api/v1/command/{command_id}",
+        headers=HEADERS,
+        timeout=30,
+    )
+
+    response.raise_for_status()
+    return response.json()
+
+def wait_for_lidarr_import(
+    command_id,
+    source_path,
+    timeout_seconds=30,
+    poll_interval=1,
+):
+    deadline = time.monotonic() + timeout_seconds
+    last_command = {}
+
+    while time.monotonic() < deadline:
+        try:
+            last_command = get_lidarr_command(command_id)
+        except requests.RequestException as exc:
+            print(
+                f"[MANUAL IMPORT STATUS] Could not read command "
+                f"{command_id}: {exc}",
+                flush=True,
+            )
+            time.sleep(poll_interval)
+            continue
+
+        status = str(last_command.get("status", "")).lower()
+
+        print(
+            f"[MANUAL IMPORT STATUS] commandId={command_id}, "
+            f"status={status or 'unknown'}, "
+            f"source_exists={source_path.exists()}",
+            flush=True,
+        )
+
+        if status == "failed":
+            return {
+                "status": "failed",
+                "command": last_command,
+                "source_exists": source_path.exists(),
+            }
+
+        if status == "completed":
+            if not source_path.exists():
+                return {
+                    "status": "completed",
+                    "command": last_command,
+                    "source_exists": False,
+                }
+
+            # Command is klaar, maar geef het bestand nog even tijd
+            # om daadwerkelijk uit de stagingmap te verdwijnen.
+            time.sleep(poll_interval)
+            continue
+
+        # Lidarr kan het bestand al verplaatst hebben voordat de commandstatus
+        # zichtbaar naar completed verandert.
+        if not source_path.exists():
+            return {
+                "status": "completed",
+                "command": last_command,
+                "source_exists": False,
+            }
+
+        time.sleep(poll_interval)
+
+    return {
+        "status": (
+            "completed_source_remaining"
+            if str(last_command.get("status", "")).lower() == "completed"
+            and source_path.exists()
+            else "timeout"
+        ),
+        "command": last_command,
+        "source_exists": source_path.exists(),
+    }
+
 
 @app.route("/scan", methods=["POST"])
 def scan():

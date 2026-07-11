@@ -498,3 +498,41 @@ pre {
 .queue-item a {
   overflow-wrap: anywhere;
 }
+
+.manual-import-candidate {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+}
+
+.manual-import-candidate pre {
+  max-height: 400px;
+  padding: 12px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+}
+
+.manual-import-candidate details {
+  margin-top: 12px;
+}
+
+.manual-import-candidate summary {
+  cursor: pointer;
+}
+
+.replace-existing-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0;
+  font-weight: 600;
+}
+
+.replace-existing-option input {
+  width: auto;
+  margin: 0;
+}

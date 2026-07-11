@@ -31,9 +31,16 @@
           <p>{{ tr.track_status_help_2 }}</p>
         </div>
 
-        <div class="card">
-          <a class="button-link" href="/album/{{ album.id }}/import-preview">
-            {{ tr.import_preview }}
+        <div class="card import-action-card">
+          <h2>{{ tr.review_import_downloads }}</h2>
+
+          <p class="muted">{{ tr.review_import_downloads_help }}</p>
+
+          <a
+            class="button-link"
+            href="{{ url_for('album_import_preview', album_id=album.id) }}"
+          >
+            {{ tr.review_import_downloads }}
           </a>
         </div>
 
