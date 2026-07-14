@@ -6,11 +6,11 @@ import shutil
 import re
 import unicodedata
 import time
+import requests
 from pathlib import Path
 from datetime import datetime
-
-import requests
 from flask import Flask, flash, redirect, render_template, request, url_for
+from urllib.parse import parse_qs, urlparse
 
 app = Flask(__name__)
 app.secret_key = os.environ["FLASK_SECRET_KEY"]
@@ -175,10 +175,60 @@ TRANSLATIONS = {
             "Lidarr is still processing the import. Refresh this page in a few seconds."
         ),
         "track_already_exists": (
-            "This track already has a file in Lidarr. "
-            "A normal import will keep the existing file."
+            "A matching file already exists in the Lidarr album folder. "
+            "The file may already be linked to the track, or Lidarr may still need to recognize it."
         ),
-        "replace_existing_file": "Replace the existing file",
+        "replace_existing_file": (
+            "Replace the existing file in the album folder during individual import"
+        ),
+        "batch_import_title": "Import multiple tracks",
+        "batch_import_help": (
+            "Import all selected and reviewed tracks one by one. "
+            "Existing tracks will not be replaced automatically."
+        ),
+        "batch_import_ready_count": "Tracks ready for batch import",
+        "batch_import_button": "Import selected tracks",
+        "include_in_batch_import": "Include in batch import",
+        "batch_existing_track_excluded": (
+            "A matching file already exists in the Lidarr album folder. "
+            "This track is therefore not automatically included in the batch. "
+            "Import the track individually and select 'Replace existing file' "
+            "if you want to overwrite the current file."
+        ),
+        "batch_metadata_not_ready": (
+            "Apply the suggested metadata before including this track "
+            "in the batch import."
+        ),
+        "batch_import_no_files_selected": (
+            "No tracks were selected for batch import."
+        ),
+        "batch_import_completed": (
+            "Batch import completed: {imported} imported, "
+            "{skipped} skipped and {failed} failed."
+        ),
+        "batch_import_no_files_imported": (
+            "No tracks were imported. "
+            "{skipped} skipped and {failed} failed."
+        ),
+        "batch_import_primary_title": "Import ready tracks as a batch",
+        "batch_import_primary_help": (
+            "Select the reviewed tracks you want to import as a batch. "
+            "Tracks with mismatched metadata or an existing file in the destination "
+            "folder are excluded."
+        ),
+        "batch_selected_count": "{count} track(s) selected",
+        "batch_import_selected": "Import selected tracks via Lidarr",
+        "metadata_ready": "Metadata is ready",
+        "metadata_needs_changes": "Metadata needs to be applied",
+        "edit_metadata": "Edit metadata",
+        "apply_metadata_and_prepare": "Apply metadata",
+        "ready_for_batch_import": "Ready for batch import",
+        "not_ready_for_batch_import": "Not ready for batch import",
+        "individual_import": "Import individually",
+        "individual_import_help": (
+            "This action is performed separately. Select the replace option "
+            "to safely remove the existing file before importing the new file."
+        ),
     },
     "nl": {
         "language_name": "Nederlands",
@@ -325,10 +375,60 @@ TRANSLATIONS = {
             "Lidarr verwerkt de import nog. Vernieuw deze pagina over enkele seconden."
         ),
         "track_already_exists": (
-            "Deze track heeft al een bestand in Lidarr. "
-            "Een normale import laat het bestaande bestand staan."
+            "Er staat al een passend bestand in de Lidarr-albummap. "
+            "Het bestand kan al gekoppeld zijn, of nog door Lidarr herkend moeten worden."
         ),
-        "replace_existing_file": "Bestaand bestand vervangen",
+        "replace_existing_file": (
+        "Bij individuele import het bestaande bestand in de albummap vervangen"
+        ),
+        "batch_import_title": "Meerdere tracks importeren",
+        "batch_import_help": (
+            "Importeer alle geselecteerde, gecontroleerde tracks achter elkaar. "
+            "Bestaande tracks worden niet automatisch vervangen."
+        ),
+        "batch_import_ready_count": "Tracks gereed voor batchimport",
+        "batch_import_button": "Geselecteerde tracks importeren",
+        "include_in_batch_import": "Meenemen in batchimport",
+        "batch_existing_track_excluded": (
+            "Er staat al een passend bestand in de Lidarr-albummap. "
+            "Deze track wordt daarom niet automatisch in de batch opgenomen. "
+            "Importeer de track individueel en vink 'Bestaand bestand vervangen' aan "
+            "als je het huidige bestand wilt overschrijven."
+        ),
+        "batch_metadata_not_ready": (
+            "Pas eerst de voorgestelde metadata toe voordat deze track "
+            "in de batch kan worden opgenomen."
+        ),
+        "batch_import_no_files_selected": (
+            "Er zijn geen tracks geselecteerd voor batchimport."
+        ),
+        "batch_import_completed": (
+            "Batchimport afgerond: {imported} geïmporteerd, "
+            "{skipped} overgeslagen en {failed} mislukt."
+        ),
+        "batch_import_no_files_imported": (
+            "Er zijn geen tracks geïmporteerd. "
+            "{skipped} overgeslagen en {failed} mislukt."
+        ),
+        "batch_import_primary_title": "Gereedstaande tracks als batch importeren",
+        "batch_import_primary_help": (
+            "Selecteer de gecontroleerde tracks die je wilt importeren als batch. "
+            "Tracks met afwijkende metadata of een bestaand bestand in de doelmap "
+            "worden uitgesloten."
+        ),
+        "batch_selected_count": "{count} track(s) geselecteerd",
+        "batch_import_selected": "Geselecteerde tracks importeren via Lidarr",
+        "metadata_ready": "Metadata is gereed",
+        "metadata_needs_changes": "Metadata moet nog worden toegepast",
+        "edit_metadata": "Metadata bewerken",
+        "apply_metadata_and_prepare": "Metadata toepassen",
+        "ready_for_batch_import": "Gereed voor batchimport",
+        "not_ready_for_batch_import": "Niet gereed voor batchimport",
+        "individual_import": "Individueel importeren",
+        "individual_import_help": (
+            "Gebruik dit alleen om een bestand te testen, opnieuw te proberen "
+            "of een bestaand bestand te vervangen."
+        ),
     },
     "no": {
         "language_name": "Norsk",
@@ -473,10 +573,60 @@ TRANSLATIONS = {
             "Lidarr behandler fortsatt importen. Oppdater siden om noen sekunder."
         ),
         "track_already_exists": (
-            "Dette sporet har allerede en fil i Lidarr. "
-            "En vanlig import beholder den eksisterende filen."
+            "Det finnes allerede en passende fil i Lidarr-albummappen. "
+            "Filen kan allerede være koblet til sporet, eller Lidarr må fortsatt gjenkjenne den."
         ),
-        "replace_existing_file": "Erstatt den eksisterende filen",
+        "replace_existing_file": (
+            "Erstatt den eksisterende filen i albummappen ved individuell import"
+        ),
+        "batch_import_title": "Importer flere spor",
+        "batch_import_help": (
+            "Importer alle valgte og kontrollerte spor ett etter ett. "
+            "Eksisterende spor erstattes ikke automatisk."
+        ),
+        "batch_import_ready_count": "Spor klare for masseimport",
+        "batch_import_button": "Importer valgte spor",
+        "include_in_batch_import": "Ta med i masseimport",
+        "batch_existing_track_excluded": (
+            "Det finnes allerede en samsvarende fil i Lidarr-albummappen. "
+            "Dette sporet blir derfor ikke automatisk inkludert i gruppeimporten. "
+            "Importer sporet individuelt og velg 'Erstatt eksisterende fil' "
+            "hvis du vil overskrive den nåværende filen."
+        ),
+        "batch_metadata_not_ready": (
+            "Bruk de foreslåtte metadataene før sporet kan tas med "
+            "i masseimporten."
+        ),
+        "batch_import_no_files_selected": (
+            "Ingen spor ble valgt for masseimport."
+        ),
+        "batch_import_completed": (
+            "Masseimport fullført: {imported} importert, "
+            "{skipped} hoppet over og {failed} mislyktes."
+        ),
+        "batch_import_no_files_imported": (
+            "Ingen spor ble importert. "
+            "{skipped} hoppet over og {failed} mislyktes."
+        ),
+        "batch_import_primary_title": "Importer klare spor som en gruppe",
+        "batch_import_primary_help": (
+            "Velg de kontrollerte sporene du vil importere som en gruppe. "
+            "Spor med avvikende metadata eller en eksisterende fil i målmappen "
+            "blir utelatt."
+        ),
+        "batch_selected_count": "{count} spor valgt",
+        "batch_import_selected": "Importer valgte spor via Lidarr",
+        "metadata_ready": "Metadata er klar",
+        "metadata_needs_changes": "Metadata må brukes først",
+        "edit_metadata": "Rediger metadata",
+        "apply_metadata_and_prepare": "Bruk metadata",
+        "ready_for_batch_import": "Klar for masseimport",
+        "not_ready_for_batch_import": "Ikke klar for masseimport",
+        "individual_import": "Importer individuelt",
+        "individual_import_help": (
+            "Denne handlingen utføres separat. Velg erstatningsalternativet "
+            "for å fjerne den eksisterende filen på en sikker måte før den nye filen importeres."
+        ),
     },
 }
 
@@ -1281,6 +1431,609 @@ def manual_import_execute(album_id):
         )
     )
 
+def wait_for_lidarr_command(
+    command_id,
+    timeout_seconds=120,
+    poll_interval=2,
+):
+    deadline = (
+        time.monotonic()
+        + timeout_seconds
+    )
+
+    last_command = {}
+
+    while time.monotonic() < deadline:
+        try:
+            last_command = get_lidarr_command(
+                command_id
+            )
+
+        except requests.RequestException as exc:
+            print(
+                "[LIDARR COMMAND STATUS] "
+                f"Could not read command "
+                f"{command_id}: {exc}",
+                flush=True,
+            )
+
+            time.sleep(poll_interval)
+            continue
+
+        status = str(
+            last_command.get("status", "")
+        ).lower()
+
+        print(
+            "[LIDARR COMMAND STATUS] "
+            f"commandId={command_id}, "
+            f"status={status or 'unknown'}",
+            flush=True,
+        )
+
+        if status in {
+            "completed",
+            "failed",
+        }:
+            return last_command
+
+        time.sleep(poll_interval)
+
+    return {
+        **last_command,
+        "status": "timeout",
+    }    
+
+def get_album_destination_folder(
+    album,
+    track_files,
+):
+    album_path_value = album.get("path")
+
+    if album_path_value:
+        album_path = Path(album_path_value)
+
+        print(
+            "[DIRECT IMPORT] "
+            f"Album destination from album.path: "
+            f"{album_path}",
+            flush=True,
+        )
+
+        return album_path
+
+    for track_file in track_files:
+        track_file_path_value = track_file.get("path")
+
+        if not track_file_path_value:
+            continue
+
+        album_path = Path(
+            track_file_path_value
+        ).parent
+
+        print(
+            "[DIRECT IMPORT] "
+            f"Album destination from track file: "
+            f"{album_path}",
+            flush=True,
+        )
+
+        return album_path
+
+    raise ValueError(
+        "Could not determine Lidarr album destination folder"
+    )
+
+def move_track_to_album_folder(
+    destination_folder,
+    source_path,
+    destination_filename,
+    replace_existing=False,
+):
+    destination_folder = Path(
+        destination_folder
+    )
+
+    if not destination_folder.exists():
+        raise ValueError(
+            f"Album destination folder does not exist: "
+            f"{destination_folder}"
+        )
+
+    safe_filename = Path(
+        destination_filename
+    ).name
+
+    if not safe_filename:
+        raise ValueError(
+            "Destination filename is empty"
+        )
+
+    destination_path = (
+        destination_folder
+        / safe_filename
+    )
+
+    if destination_path.exists():
+        if not replace_existing:
+            return {
+                "status": "exists",
+                "source_path": source_path,
+                "destination_path": destination_path,
+            }
+
+        destination_path.unlink()
+
+    print(
+        "[DIRECT IMPORT] "
+        f"Moving {source_path} "
+        f"to {destination_path}",
+        flush=True,
+    )
+
+    shutil.move(
+        str(source_path),
+        str(destination_path),
+    )
+
+    if source_path.exists():
+        raise OSError(
+            f"Source file still exists after move: "
+            f"{source_path}"
+        )
+
+    if not destination_path.exists():
+        raise OSError(
+            f"Destination file was not created: "
+            f"{destination_path}"
+        )
+
+    return {
+        "status": "moved",
+        "source_path": source_path,
+        "destination_path": destination_path,
+    }
+
+
+def refresh_lidarr_artist(album):
+    artist = album.get("artist") or {}
+    artist_id = artist.get("id")
+
+    if not artist_id:
+        raise ValueError(
+            "Album has no valid Lidarr artist ID"
+        )
+
+    payload = {
+        "name": "RefreshArtist",
+        "artistId": artist_id,
+    }
+
+    response = requests.post(
+        f"{LIDARR_URL}/api/v1/command",
+        headers=HEADERS,
+        json=payload,
+        timeout=30,
+    )
+
+    print(
+        "[DIRECT IMPORT] "
+        f"RefreshArtist response: "
+        f"{response.status_code}",
+        flush=True,
+    )
+
+    if not response.ok:
+        print(
+            "[DIRECT IMPORT] "
+            f"RefreshArtist body: "
+            f"{response.text[:2000]}",
+            flush=True,
+        )
+
+    response.raise_for_status()
+
+    return response.json()    
+
+@app.route(
+    "/album/<int:album_id>/manual-import-batch",
+    methods=["POST"],
+)
+def manual_import_batch(album_id):
+    album, tracks = get_album_details(
+        album_id
+    )
+
+    if not album:
+        return "Album not found", 404
+
+    selected_filenames = [
+        Path(filename).name
+        for filename in request.form.getlist(
+            "filenames"
+        )
+        if filename
+    ]
+
+    if not selected_filenames:
+        flash(
+            t()["batch_import_no_files_selected"],
+            "warning",
+        )
+
+        return redirect(
+            url_for(
+                "album_import_preview",
+                album_id=album_id,
+            )
+        )
+
+    artist_value = album.get("artist")
+
+    if isinstance(artist_value, dict):
+        artist_name = artist_value.get(
+            "artistName",
+            "Unknown Artist",
+        )
+    else:
+        artist_name = str(
+            artist_value
+            or "Unknown Artist"
+        )
+
+    album_title = album.get(
+        "title",
+        "Unknown Album",
+    )
+
+    source_folder = (
+        DOWNLOAD_DIR
+        / f"{artist_name} - {album_title}"
+    )
+
+    imported = 0
+    skipped = 0
+    failed = 0
+
+    track_files = get_lidarr_track_files(
+        album_id
+    )
+
+    try:
+        all_candidates = (
+            get_lidarr_manual_import_candidates(
+                source_folder
+            )
+        )
+
+    except requests.RequestException as exc:
+        print(
+            "[BATCH IMPORT] "
+            f"Could not load Lidarr candidates: "
+            f"{exc}",
+            flush=True,
+        )
+
+        flash(
+            f"Lidarr-kandidaten konden niet "
+            f"worden geladen: {exc}",
+            "error",
+        )
+
+        return redirect(
+            url_for(
+                "album_import_preview",
+                album_id=album_id,
+            )
+        )
+
+    for filename in selected_filenames:
+        source_path = (
+            source_folder
+            / filename
+        )
+
+        if not source_path.exists():
+            print(
+                "[BATCH IMPORT] "
+                f"Source missing: {source_path}",
+                flush=True,
+            )
+
+            failed += 1
+            continue
+
+        track = find_track_for_file(
+            file_path=source_path,
+            tracks=tracks,
+            album_id=album_id,
+        )
+
+        if not track:
+            print(
+                "[BATCH IMPORT] "
+                f"No track match: {filename}",
+                flush=True,
+            )
+
+            skipped += 1
+            continue
+
+        existing_track_file = (
+            find_matching_existing_track_file(
+                album_id=album_id,
+                track=track,
+                track_files=track_files,
+            )
+        )
+
+        if existing_track_file:
+            print(
+                "[BATCH IMPORT] "
+                f"Existing Lidarr track file "
+                f"skipped: {filename}, "
+                f"trackFileId="
+                f"{existing_track_file.get('id')}",
+                flush=True,
+            )
+
+            skipped += 1
+            continue
+
+        existing_album_file = (
+            find_existing_album_file(
+                album=album,
+                track=track,
+            )
+        )
+
+        if existing_album_file:
+            print(
+                "[BATCH IMPORT] "
+                f"Existing physical album file "
+                f"skipped: {filename}, "
+                f"path={existing_album_file}",
+                flush=True,
+            )
+
+            skipped += 1
+            continue
+
+        current_metadata = read_audio_metadata(
+            source_path
+        )
+
+        suggested_metadata = (
+            build_suggested_metadata(
+                album=album,
+                track=track,
+                file_path=source_path,
+            )
+        )
+
+        if not suggested_metadata:
+            print(
+                "[BATCH IMPORT] "
+                f"No suggested metadata: "
+                f"{filename}",
+                flush=True,
+            )
+
+            failed += 1
+            continue
+
+        if not metadata_matches_suggestion(
+            current=current_metadata,
+            suggested=suggested_metadata,
+        ):
+            print(
+                "[BATCH IMPORT] "
+                f"Metadata not ready: "
+                f"{filename}",
+                flush=True,
+            )
+
+            skipped += 1
+            continue
+
+        matching_candidates = (
+            [
+                candidate
+                for candidate in all_candidates
+                if Path(
+                    candidate.get("path", "")
+                ) == source_path
+            ]
+        )
+
+        if not matching_candidates:
+            print(
+                "[BATCH IMPORT] "
+                f"No Lidarr candidate for exact path: "
+                f"{source_path}",
+                flush=True,
+            )
+
+            failed += 1
+            continue
+
+        manual_override = (
+            build_manual_import_override(
+                candidates=matching_candidates,
+                album=album,
+                track=track,
+                source_path=source_path,
+                replace_existing=False,
+            )
+        )
+
+        if not manual_override:
+            print(
+                "[BATCH IMPORT] "
+                f"Could not build override: "
+                f"{filename}",
+                flush=True,
+            )
+
+            failed += 1
+            continue
+
+        try:
+            updated_items = (
+                update_lidarr_manual_import(
+                    manual_override
+                )
+            )
+
+            command = (
+                start_lidarr_manual_import(
+                    updated_items=updated_items,
+                    import_mode="Move",
+                )
+            )
+
+            command_id = command.get("id")
+
+            if not command_id:
+                raise ValueError(
+                    "Lidarr returned no command ID"
+                )
+
+            print(
+                "[BATCH IMPORT] "
+                f"Started filename={filename}, "
+                f"commandId={command_id}",
+                flush=True,
+            )
+
+            result = wait_for_lidarr_import(
+                command_id=command_id,
+                source_path=source_path,
+            )
+
+            result_status = result.get(
+                "status"
+            )
+
+            if result_status not in {
+                "completed",
+                "completed_source_remaining",
+            }:
+                failed += 1
+
+                command_data = (
+                    result.get("command")
+                    or {}
+                )
+
+                print(
+                    "[BATCH IMPORT] "
+                    f"Import command did not complete: "
+                    f"{filename}, "
+                    f"status={result_status}, "
+                    f"message="
+                    f"{command_data.get('message')}",
+                    flush=True,
+                )
+
+                continue
+
+            refreshed_track_files = (
+                get_lidarr_track_files(
+                    album_id
+                )
+            )
+
+            imported_track_file = (
+                find_matching_existing_track_file(
+                    album_id=album_id,
+                    track=track,
+                    track_files=(
+                        refreshed_track_files
+                    ),
+                )
+            )
+
+            if imported_track_file:
+                imported += 1
+                track_files = (
+                    refreshed_track_files
+                )
+
+                print(
+                    "[BATCH IMPORT] "
+                    f"Verified import: "
+                    f"{filename}, "
+                    f"trackFileId="
+                    f"{imported_track_file.get('id')}, "
+                    f"path="
+                    f"{imported_track_file.get('path')}",
+                    flush=True,
+                )
+
+            else:
+                failed += 1
+
+                print(
+                    "[BATCH IMPORT] "
+                    f"Command completed but no "
+                    f"Lidarr trackFile was found: "
+                    f"{filename}, "
+                    f"sourceExists="
+                    f"{source_path.exists()}",
+                    flush=True,
+                )
+
+        except (
+            requests.RequestException,
+            ValueError,
+            KeyError,
+        ) as exc:
+            failed += 1
+
+            print(
+                "[BATCH IMPORT] "
+                f"Failed for {filename}: {exc}",
+                flush=True,
+            )
+
+    translation = t()
+
+    if imported:
+        flash(
+            translation[
+                "batch_import_completed"
+            ].format(
+                imported=imported,
+                skipped=skipped,
+                failed=failed,
+            ),
+            (
+                "success"
+                if failed == 0
+                else "warning"
+            ),
+        )
+
+    else:
+        flash(
+            translation[
+                "batch_import_no_files_imported"
+            ].format(
+                skipped=skipped,
+                failed=failed,
+            ),
+            "warning",
+        )
+
+    return redirect(
+        url_for(
+            "album_import_preview",
+            album_id=album_id,
+        )
+    )
+
 def apply_custom_metadata(file_path, metadata):
     temp_path = file_path.with_name(
         f".{file_path.stem}.metadata-temp"
@@ -1361,7 +2114,66 @@ def apply_custom_metadata(file_path, metadata):
         if temp_path.exists():
             temp_path.unlink()
 
-    return False    
+    return False
+
+def get_tag_number(value):
+    match = re.search(r"\d+", str(value or ""))
+    return int(match.group()) if match else None
+
+
+def metadata_matches_suggestion(current, suggested):
+    if not current or not suggested:
+        return False
+
+    text_fields = (
+        "artist",
+        "album_artist",
+        "album",
+        "title",
+    )
+
+    for field in text_fields:
+        current_value = normalize_match_text(
+            current.get(field, "")
+        )
+        suggested_value = normalize_match_text(
+            suggested.get(field, "")
+        )
+
+        if current_value != suggested_value:
+            return False
+
+    current_track = get_tag_number(
+        current.get("track")
+    )
+    suggested_track = get_tag_number(
+        suggested.get("track")
+    )
+
+    if current_track != suggested_track:
+        return False
+
+    current_disc = get_tag_number(
+        current.get("disc")
+    )
+    suggested_disc = get_tag_number(
+        suggested.get("disc")
+    )
+
+    if suggested_disc is not None and current_disc != suggested_disc:
+        return False
+
+    current_year = get_tag_number(
+        current.get("year")
+    )
+    suggested_year = get_tag_number(
+        suggested.get("year")
+    )
+
+    if suggested_year is not None and current_year != suggested_year:
+        return False
+
+    return True
 
 @app.route(
     "/album/<int:album_id>/manual-import-apply",
@@ -1448,13 +2260,6 @@ def manual_import_apply(album_id):
         ).strip(),
     }
 
-    destination_filename = Path(
-        request.form.get(
-            "destination_filename",
-            filename,
-        )
-    ).name
-
     success = apply_custom_metadata(
         file_path=source_path,
         metadata=metadata,
@@ -1472,17 +2277,6 @@ def manual_import_apply(album_id):
                 album_id=album_id,
             )
         )
-
-    destination_path = (
-        source_path.parent
-        / destination_filename
-    )
-
-    if destination_path != source_path:
-        if destination_path.exists():
-            destination_path.unlink()
-
-        source_path.rename(destination_path)
 
     flash(
         t()["metadata_apply_success"],
@@ -1526,10 +2320,17 @@ def find_matching_existing_track_file(
     album_id,
     track,
     requested_track_file_id=None,
+    track_files=None,
 ):
-    track_files = get_lidarr_track_files(album_id)
+    if track_files is None:
+        track_files = get_lidarr_track_files(
+            album_id
+        )
 
-    expected_track_number = get_track_number(track)
+    expected_track_number = get_track_number(
+        track
+    )
+
     expected_title = normalize_match_text(
         track.get("title", "")
     )
@@ -1539,16 +2340,22 @@ def find_matching_existing_track_file(
 
         if (
             requested_track_file_id is not None
-            and str(track_file_id) != str(requested_track_file_id)
+            and str(track_file_id)
+            != str(requested_track_file_id)
         ):
             continue
 
-        track_file_path_value = track_file.get("path")
+        track_file_path_value = track_file.get(
+            "path"
+        )
 
         if not track_file_path_value:
             continue
 
-        track_file_path = Path(track_file_path_value)
+        track_file_path = Path(
+            track_file_path_value
+        )
+
         normalized_filename = normalize_match_text(
             track_file_path.stem
         )
@@ -1557,7 +2364,7 @@ def find_matching_existing_track_file(
 
         if expected_track_number is not None:
             track_number_pattern = re.compile(
-                rf"(?:^|\s)0*{expected_track_number}(?:\s|$)"
+                rf"(?:^|\s|-)0*{expected_track_number}(?:\s|-|$)"
             )
 
             number_matches = bool(
@@ -1568,10 +2375,18 @@ def find_matching_existing_track_file(
 
         title_matches = bool(
             expected_title
-            and expected_title in normalized_filename
+            and expected_title
+            in normalized_filename
         )
 
         if number_matches and title_matches:
+            print(
+                "[TRACK FILE CHECK] "
+                f"Existing file matched: "
+                f"{track_file_path}",
+                flush=True,
+            )
+
             return track_file
 
     return None
@@ -1604,7 +2419,10 @@ def delete_lidarr_track_file(track_file_id):
 
 @app.route("/album/<int:album_id>/import-preview")
 def album_import_preview(album_id):
-    print("[IMPORT PREVIEW] route called", flush=True)
+    print(
+        "[IMPORT PREVIEW] route called",
+        flush=True,
+    )
 
     album, tracks = get_album_details(album_id)
 
@@ -1633,15 +2451,31 @@ def album_import_preview(album_id):
         / f"{artist_name} - {album_title}"
     )
 
-    audio_files = get_audio_files(source_path)
+    audio_files = get_audio_files(
+        source_path
+    )
+
     import_items = []
-    track_files = get_lidarr_track_files(album_id)
+
+    track_files = get_lidarr_track_files(
+        album_id
+    )
 
     print(
-        f"[TRACK FILES] albumId={album_id}, "
+        f"[TRACK FILES] "
+        f"albumId={album_id}, "
         f"count={len(track_files)}",
         flush=True,
     )
+
+    all_lidarr_candidates = []
+
+    if audio_files:
+        all_lidarr_candidates = (
+            get_lidarr_manual_import_candidates(
+                source_path
+            )
+        )
 
     for file_path in audio_files:
         track = find_track_for_file(
@@ -1650,63 +2484,52 @@ def album_import_preview(album_id):
             album_id=album_id,
         )
 
+        existing_track_file = None
+        existing_album_file = None
         track_file_id = 0
         track_already_imported = False
 
         if track:
-            expected_track_number = get_track_number(track)
-            expected_title = normalize_match_text(
-                track.get("title", "")
+            existing_track_file = (
+                find_matching_existing_track_file(
+                    album_id=album_id,
+                    track=track,
+                    track_files=track_files,
+                )
             )
 
-            for track_file in track_files:
-                track_file_path_value = track_file.get("path")
-
-                if not track_file_path_value:
-                    continue
-
-                track_file_path = Path(
-                    track_file_path_value
+            existing_album_file = (
+                find_existing_album_file(
+                    album=album,
+                    track=track,
                 )
+            )
 
-                existing_filename = normalize_match_text(
-                    track_file_path.stem
-                )
+        if existing_track_file:
+            track_file_id = (
+                existing_track_file.get("id")
+                or 0
+            )
 
-                number_matches = False
+            print(
+                "[IMPORT PREVIEW] "
+                f"Existing Lidarr track file found: "
+                f"{existing_track_file.get('path')}",
+                flush=True,
+            )
 
-                if expected_track_number is not None:
-                    track_number_pattern = re.compile(
-                        rf"(?:^|\s)0*"
-                        rf"{expected_track_number}"
-                        rf"(?:\s|$)"
-                    )
+        elif existing_album_file:
+            print(
+                "[IMPORT PREVIEW] "
+                f"Existing physical album file found: "
+                f"{existing_album_file}",
+                flush=True,
+            )
 
-                    number_matches = bool(
-                        track_number_pattern.search(
-                            existing_filename
-                        )
-                    )
-
-                title_matches = bool(
-                    expected_title
-                    and expected_title in existing_filename
-                )
-
-                if number_matches and title_matches:
-                    track_file_id = (
-                        track_file.get("id") or 0
-                    )
-                    track_already_imported = True
-
-                    print(
-                        "[TRACK FILE CHECK] "
-                        f"Existing file matched: "
-                        f"{track_file_path}",
-                        flush=True,
-                    )
-
-                    break
+        track_already_imported = bool(
+            existing_track_file
+            or existing_album_file
+        )
 
         current_metadata = read_audio_metadata(
             file_path
@@ -1714,39 +2537,82 @@ def album_import_preview(album_id):
 
         suggested_metadata = None
         manual_override = None
-        all_lidarr_candidates = []
+        matching_candidates = []
 
         if track:
-            suggested_metadata = build_suggested_metadata(
-                album=album,
-                track=track,
-                file_path=file_path,
-            )
-
-            all_lidarr_candidates = (
-                get_lidarr_manual_import_candidates(
-                    file_path.parent
-                )
-            )
-
-            matching_candidates = (
-                filter_manual_import_candidates(
-                    candidates=all_lidarr_candidates,
-                    album_id=album_id,
+            suggested_metadata = (
+                build_suggested_metadata(
+                    album=album,
+                    track=track,
                     file_path=file_path,
                 )
             )
 
-            if matching_candidates:
-                manual_override = matching_candidates[0]
-
-            elif all_lidarr_candidates:
-                manual_override = build_manual_import_override(
-                    candidates=all_lidarr_candidates,
-                    album=album,
-                    track=track,
-                    source_path=file_path,
+            if (
+                existing_track_file
+                or existing_album_file
+            ):
+                print(
+                    "[IMPORT PREVIEW] "
+                    f"Normal manual import disabled because "
+                    f"a target file already exists: "
+                    f"{file_path.name}",
+                    flush=True,
                 )
+
+            else:
+                matching_candidates = (
+                    filter_manual_import_candidates(
+                        candidates=all_lidarr_candidates,
+                        album_id=album_id,
+                        file_path=file_path,
+                    )
+                )
+
+                if matching_candidates:
+                    manual_override = (
+                        matching_candidates[0]
+                    )
+
+                elif all_lidarr_candidates:
+                    manual_override = (
+                        build_manual_import_override(
+                            candidates=all_lidarr_candidates,
+                            album=album,
+                            track=track,
+                            source_path=file_path,
+                            replace_existing=False,
+                        )
+                    )
+
+        metadata_ready = (
+            metadata_matches_suggestion(
+                current=current_metadata,
+                suggested=suggested_metadata,
+            )
+        )
+
+        batch_ready = bool(
+            track
+            and manual_override
+            and metadata_ready
+            and not existing_track_file
+            and not existing_album_file
+        )
+
+        print(
+            "[IMPORT PREVIEW STATUS] "
+            f"file={file_path.name}, "
+            f"trackMatched={bool(track)}, "
+            f"metadataReady={metadata_ready}, "
+            f"existingTrackFile="
+            f"{bool(existing_track_file)}, "
+            f"existingAlbumFile="
+            f"{bool(existing_album_file)}, "
+            f"manualOverride={bool(manual_override)}, "
+            f"batchReady={batch_ready}",
+            flush=True,
+        )
 
         import_items.append({
             "filename": file_path.name,
@@ -1756,13 +2622,32 @@ def album_import_preview(album_id):
             "suggested": suggested_metadata,
             "manual_override": manual_override,
             "candidate_count": len(
-                all_lidarr_candidates
+                matching_candidates
             ),
             "track_file_id": track_file_id,
             "track_already_imported": (
                 track_already_imported
             ),
+            "existing_album_file": (
+                str(existing_album_file)
+                if existing_album_file
+                else None
+            ),
+            "metadata_ready": metadata_ready,
+            "batch_ready": batch_ready,
         })
+
+    batch_ready_count = sum(
+        1
+        for item in import_items
+        if item.get("batch_ready")
+    )
+
+    print(
+        f"[IMPORT PREVIEW] "
+        f"batchReadyCount={batch_ready_count}",
+        flush=True,
+    )
 
     return render_template(
         "import_preview.html",
@@ -1774,6 +2659,7 @@ def album_import_preview(album_id):
         source_exists=source_path.exists(),
         audio_files=audio_files,
         import_items=import_items,
+        batch_ready_count=batch_ready_count,
         lidarr_url=LIDARR_URL,
     )
 
@@ -1941,8 +2827,8 @@ def find_track_for_file(file_path, tracks, album_id=None):
     if best_track and best_score >= 0.70:
         print(
             f"[TRACK MATCH] Selected for {file_path.name}: "
-            f"{get_track_number(best_track) or '?'} - "
-            f"{best_track.get('title')} ({best_score:.1%})",
+            f"{get_track_number(best_track)} - {best_track.get('title')} "
+            f"({round(best_score * 100, 1)}%)",
             flush=True,
         )
         return best_track
@@ -2138,16 +3024,27 @@ def build_manual_import_override(
     source_path,
     replace_existing=False,
 ):
+    source_path = Path(source_path)
+
     source_candidate = next(
         (
             candidate
             for candidate in candidates
-            if Path(candidate.get("path", "")) == Path(source_path)
+            if Path(
+                candidate.get("path", "")
+            ) == source_path
         ),
-        candidates[0] if candidates else None,
+        None,
     )
 
     if not source_candidate:
+        print(
+            "[MANUAL IMPORT OVERRIDE] "
+            f"No candidate found for source path: "
+            f"{source_path}",
+            flush=True,
+        )
+
         return None
 
     releases = album.get("releases") or []
@@ -2161,22 +3058,40 @@ def build_manual_import_override(
         releases[0] if releases else None,
     )
 
+    if not selected_release:
+        print(
+            "[MANUAL IMPORT OVERRIDE] "
+            f"No album release available for "
+            f"albumId={album.get('id')}",
+            flush=True,
+        )
+
+        return None
+
     track_number = get_track_number(track)
 
     override = {
         "id": source_candidate.get("id"),
-        "path": source_candidate.get("path"),
-        "name": source_candidate.get("name"),
-        "size": source_candidate.get("size"),
-        "quality": source_candidate.get("quality"),
-        "audioTags": source_candidate.get("audioTags"),
+        "path": str(source_path),
+        "name": (
+            source_candidate.get("name")
+            or source_path.name
+        ),
+        "size": (
+            source_candidate.get("size")
+            or source_path.stat().st_size
+        ),
+        "quality": source_candidate.get(
+            "quality"
+        ),
+        "audioTags": source_candidate.get(
+            "audioTags"
+        ),
         "artist": album.get("artist"),
         "album": album,
         "albumId": album.get("id"),
         "albumReleaseId": (
             selected_release.get("id")
-            if selected_release
-            else None
         ),
         "tracks": [
             {
@@ -2187,87 +3102,328 @@ def build_manual_import_override(
                     if track_number is not None
                     else ""
                 ),
-                "albumId": track.get("albumId"),
-                "artistId": track.get("artistId"),
+                "albumId": (
+                    track.get("albumId")
+                    or album.get("id")
+                ),
+                "artistId": (
+                    track.get("artistId")
+                    or (
+                        album.get("artist")
+                        or {}
+                    ).get("id")
+                ),
             }
         ],
-        "replaceExistingFiles": replace_existing,
+        "replaceExistingFiles": (
+            replace_existing
+        ),
         "rejections": [],
     }
 
     print(
-        f"[MANUAL IMPORT OVERRIDE] Prepared override for "
+        "[MANUAL IMPORT OVERRIDE] "
+        f"Prepared override for "
+        f"path={source_path}, "
         f"albumId={album.get('id')}, "
-        f"albumReleaseId={override['albumReleaseId']}, "
-        f"trackId={track.get('id')}",
+        f"albumReleaseId="
+        f"{override['albumReleaseId']}, "
+        f"trackId={track.get('id')}, "
+        f"replaceExistingFiles="
+        f"{replace_existing}",
         flush=True,
     )
-    print(
-        f"[MANUAL IMPORT OVERRIDE] "
-        f"replaceExistingFiles={replace_existing}",
-        flush=True,
-    )
+
     return override
 
-def update_lidarr_manual_import(manual_import_item):
+def find_existing_album_file(
+    album,
+    track,
+):
+    album_path_value = album.get("path")
+
+    if not album_path_value:
+        return None
+
+    album_path = Path(album_path_value)
+
+    if not album_path.exists():
+        return None
+
+    expected_track_number = get_track_number(track)
+    expected_title = normalize_match_text(
+        track.get("title", "")
+    )
+
+    audio_extensions = {
+        ".mp3",
+        ".m4a",
+        ".flac",
+        ".ogg",
+        ".opus",
+        ".wav",
+    }
+
+    for file_path in album_path.iterdir():
+        if not file_path.is_file():
+            continue
+
+        if file_path.suffix.lower() not in audio_extensions:
+            continue
+
+        normalized_filename = normalize_match_text(
+            file_path.stem
+        )
+
+        number_matches = False
+
+        if expected_track_number is not None:
+            track_number_pattern = re.compile(
+                rf"(?:^|\s)0*"
+                rf"{expected_track_number}"
+                rf"(?:\s|$)"
+            )
+
+            number_matches = bool(
+                track_number_pattern.search(
+                    normalized_filename
+                )
+            )
+
+        title_matches = bool(
+            expected_title
+            and expected_title in normalized_filename
+        )
+
+        if number_matches and title_matches:
+            print(
+                "[ALBUM FILE CHECK] "
+                f"Existing physical file matched: "
+                f"{file_path}",
+                flush=True,
+            )
+
+            return file_path
+
+    return None
+
+def update_lidarr_manual_import(manual_override):
     response = requests.post(
         f"{LIDARR_URL}/api/v1/manualimport",
         headers=HEADERS,
-        json=[manual_import_item],
+        json=[manual_override],
         timeout=30,
     )
 
     print(
-        f"[MANUAL IMPORT UPDATE] Response status: {response.status_code}",
+        "[MANUAL IMPORT UPDATE] "
+        f"Response status: {response.status_code}",
         flush=True,
     )
 
     if not response.ok:
         print(
-            f"[MANUAL IMPORT UPDATE] Error response: "
-            f"{response.text[:2000]}",
+            "[MANUAL IMPORT UPDATE] "
+            f"Response body: {response.text[:2000]}",
             flush=True,
         )
 
     response.raise_for_status()
 
-    updated_items = response.json()
+    response_items = response.json()
 
-    if not isinstance(updated_items, list) or not updated_items:
+    if not isinstance(response_items, list):
         raise ValueError(
-            "Lidarr returned no updated manual-import items"
+            "Lidarr returned an unexpected "
+            "manual-import response"
+        )
+
+    requested_path = Path(
+        manual_override.get("path", "")
+    )
+
+    updated_items = [
+        item
+        for item in response_items
+        if Path(item.get("path", ""))
+        == requested_path
+    ]
+
+    if not updated_items:
+        raise ValueError(
+            "Lidarr did not return the requested "
+            "manual-import item"
+        )
+
+    for item in updated_items:
+        # Lidarr voert na POST /manualimport opnieuw
+        # automatische matching uit en kan daardoor
+        # onze handmatige selectie overschrijven.
+        #
+        # Herstel daarom expliciet de handmatige
+        # artist/album/release/track-koppeling.
+
+        item["artist"] = manual_override.get(
+            "artist"
+        )
+
+        item["album"] = manual_override.get(
+            "album"
+        )
+
+        item["albumId"] = manual_override.get(
+            "albumId"
+        )
+
+        item["albumReleaseId"] = (
+            manual_override.get(
+                "albumReleaseId"
+            )
+        )
+
+        item["tracks"] = manual_override.get(
+            "tracks",
+            [],
+        )
+
+        item["replaceExistingFiles"] = (
+            manual_override.get(
+                "replaceExistingFiles",
+                False,
+            )
+        )
+
+        # Automatische rejections van Lidarr horen
+        # niet mee naar de ManualImport command nadat
+        # de gebruiker/helper de koppeling handmatig
+        # heeft bevestigd.
+        item["rejections"] = []
+
+        print(
+            "[MANUAL IMPORT UPDATE RESULT] "
+            f"path={item.get('path')}, "
+            f"albumId="
+            f"{(item.get('album') or {}).get('id')}, "
+            f"albumReleaseId="
+            f"{item.get('albumReleaseId')}, "
+            f"trackIds="
+            f"{[
+                track.get('id')
+                for track
+                in item.get('tracks', [])
+            ]}, "
+            f"replaceExistingFiles="
+            f"{item.get('replaceExistingFiles')}, "
+            f"rejections="
+            f"{[
+                rejection.get('reason')
+                for rejection
+                in item.get('rejections', [])
+            ]}",
+            flush=True,
         )
 
     return updated_items
 
-def start_lidarr_manual_import(updated_items, import_mode="Move"):
+def start_lidarr_manual_import(
+    updated_items,
+    import_mode="Move",
+):
     files = []
 
     for item in updated_items:
-        files.append({
+        artist = item.get("artist") or {}
+        album = item.get("album") or {}
+        tracks = item.get("tracks") or []
+
+        artist_id = (
+            item.get("artistId")
+            or artist.get("id")
+            or 0
+        )
+
+        album_id = (
+            item.get("albumId")
+            or album.get("id")
+            or 0
+        )
+
+        album_release_id = (
+            item.get("albumReleaseId")
+            or 0
+        )
+
+        track_ids = [
+            track.get("id")
+            for track in tracks
+            if track.get("id")
+        ]
+
+        if not artist_id:
+            raise ValueError(
+                f"No artistId available for {item.get('path')}"
+            )
+
+        if not album_id:
+            raise ValueError(
+                f"No albumId available for {item.get('path')}"
+            )
+
+        if not album_release_id:
+            raise ValueError(
+                f"No albumReleaseId available for {item.get('path')}"
+            )
+
+        if not track_ids:
+            raise ValueError(
+                f"No trackIds available for {item.get('path')}"
+            )
+
+        import_file = {
             "path": item["path"],
-            "artistId": item["artist"]["id"],
-            "albumId": item["album"]["id"],
-            "albumReleaseId": item["albumReleaseId"],
+            "artistId": int(artist_id),
+            "albumId": int(album_id),
+            "albumReleaseId": int(
+                album_release_id
+            ),
             "trackIds": [
-                track["id"]
-                for track in item.get("tracks", [])
+                int(track_id)
+                for track_id in track_ids
             ],
             "quality": item["quality"],
+            "indexerFlags": item.get(
+                "indexerFlags",
+                0,
+            ),
             "disableReleaseSwitching": item.get(
                 "disableReleaseSwitching",
                 False,
             ),
-            "replaceExistingFiles": item.get(
-                "replaceExistingFiles",
-                False,
-            ),
-        })
+        }
+
+        files.append(import_file)
+
+        print(
+            "[MANUAL IMPORT COMMAND ITEM] "
+            f"path={import_file['path']}, "
+            f"artistId={import_file['artistId']}, "
+            f"albumId={import_file['albumId']}, "
+            f"albumReleaseId="
+            f"{import_file['albumReleaseId']}, "
+            f"trackIds={import_file['trackIds']}",
+            flush=True,
+        )
+
+    replace_existing = any(
+        bool(item.get("replaceExistingFiles"))
+        for item in updated_items
+    )
 
     payload = {
         "name": "ManualImport",
         "files": files,
         "importMode": import_mode,
+        "replaceExistingFiles": replace_existing,
     }
 
     response = requests.post(
@@ -2278,19 +3434,20 @@ def start_lidarr_manual_import(updated_items, import_mode="Move"):
     )
 
     print(
-        f"[MANUAL IMPORT COMMAND] Response status: "
-        f"{response.status_code}",
+        "[MANUAL IMPORT COMMAND] "
+        f"Response status: {response.status_code}",
         flush=True,
     )
 
     if not response.ok:
         print(
-            f"[MANUAL IMPORT COMMAND] Error response: "
-            f"{response.text[:2000]}",
+            "[MANUAL IMPORT COMMAND] "
+            f"Response body: {response.text[:2000]}",
             flush=True,
         )
 
     response.raise_for_status()
+
     return response.json()
 
 def get_lidarr_command(command_id):
@@ -2314,48 +3471,83 @@ def wait_for_lidarr_import(
 
     while time.monotonic() < deadline:
         try:
-            last_command = get_lidarr_command(command_id)
+            last_command = get_lidarr_command(
+                command_id
+            )
+
         except requests.RequestException as exc:
             print(
-                f"[MANUAL IMPORT STATUS] Could not read command "
+                f"[MANUAL IMPORT STATUS] "
+                f"Could not read command "
                 f"{command_id}: {exc}",
                 flush=True,
             )
+
             time.sleep(poll_interval)
             continue
 
-        status = str(last_command.get("status", "")).lower()
+        status = str(
+            last_command.get("status", "")
+        ).lower()
+
+        source_exists = source_path.exists()
 
         print(
-            f"[MANUAL IMPORT STATUS] commandId={command_id}, "
+            f"[MANUAL IMPORT STATUS] "
+            f"commandId={command_id}, "
             f"status={status or 'unknown'}, "
-            f"source_exists={source_path.exists()}",
+            f"source_exists={source_exists}",
             flush=True,
         )
 
         if status == "failed":
+            print(
+                "[MANUAL IMPORT FAILED] "
+                f"message={last_command.get('message')}, "
+                f"errorMessage="
+                f"{last_command.get('errorMessage')}, "
+                f"exception="
+                f"{last_command.get('exception')}",
+                flush=True,
+            )
+
+            print(
+                "[MANUAL IMPORT FAILED COMMAND] "
+                f"{last_command}",
+                flush=True,
+            )
+
             return {
                 "status": "failed",
                 "command": last_command,
-                "source_exists": source_path.exists(),
+                "source_exists": source_exists,
             }
 
         if status == "completed":
-            if not source_path.exists():
-                return {
-                    "status": "completed",
-                    "command": last_command,
-                    "source_exists": False,
-                }
+            command_body = last_command.get("body") or {}
 
-            # Command is klaar, maar geef het bestand nog even tijd
-            # om daadwerkelijk uit de stagingmap te verdwijnen.
-            time.sleep(poll_interval)
-            continue
+            print(
+                "[MANUAL IMPORT COMPLETED COMMAND] "
+                f"files={command_body.get('files')}, "
+                f"importMode={command_body.get('importMode')}, "
+                f"replaceExistingFiles="
+                f"{command_body.get('replaceExistingFiles')}",
+                flush=True,
+            )
 
-        # Lidarr kan het bestand al verplaatst hebben voordat de commandstatus
-        # zichtbaar naar completed verandert.
-        if not source_path.exists():
+            return {
+                "status": (
+                    "completed_source_remaining"
+                    if source_exists
+                    else "completed"
+                ),
+                "command": last_command,
+                "source_exists": source_exists,
+            }
+
+        # Lidarr kan het bestand al verplaatst hebben voordat
+        # de commandstatus zichtbaar naar completed verandert.
+        if not source_exists:
             return {
                 "status": "completed",
                 "command": last_command,
@@ -2364,15 +3556,21 @@ def wait_for_lidarr_import(
 
         time.sleep(poll_interval)
 
+    final_status = str(
+        last_command.get("status", "")
+    ).lower()
+
+    source_exists = source_path.exists()
+
     return {
         "status": (
             "completed_source_remaining"
-            if str(last_command.get("status", "")).lower() == "completed"
-            and source_path.exists()
+            if final_status == "completed"
+            and source_exists
             else "timeout"
         ),
         "command": last_command,
-        "source_exists": source_path.exists(),
+        "source_exists": source_exists,
     }
 
 
@@ -2496,72 +3694,316 @@ def add_missing_track_to_queue():
 
     return redirect(request.referrer or url_for("downloads"))
 
+def get_youtube_download_source(item):
+    url = str(item.get("url") or "").strip()
+
+    if not url:
+        return ""
+
+    parsed = urlparse(url)
+
+    is_youtube_search_page = (
+        parsed.netloc.lower()
+        in {
+            "youtube.com",
+            "www.youtube.com",
+            "m.youtube.com",
+        }
+        and parsed.path == "/results"
+    )
+
+    if not is_youtube_search_page:
+        return url
+
+    artist = str(item.get("artist") or "").strip()
+    album = str(item.get("album") or "").strip()
+
+    key = str(item.get("key") or "").strip()
+    track_title = key.rsplit(" - ", 1)[-1].strip()
+
+    original_query = parse_qs(parsed.query).get(
+        "search_query",
+        [""],
+    )[0].strip()
+
+    search_parts = [
+        artist,
+        album,
+        track_title,
+        "soundtrack",
+    ]
+
+    search_query = " ".join(
+        part
+        for part in search_parts
+        if part
+    ).strip()
+
+    if not search_query:
+        search_query = original_query
+
+    return f"ytsearch1:{search_query}"
+
 @app.route("/download", methods=["POST"])
 def download_queue():
     queue = load_json(QUEUE_FILE, [])
     processed = load_json(PROCESSED_FILE, [])
     remaining = []
 
-    for item in queue:
+    print(
+        f"[DOWNLOAD QUEUE] Starting queue with {len(queue)} item(s)",
+        flush=True,
+    )
+
+    for index, item in enumerate(queue, start=1):
         key = item["key"]
         mode = item.get("mode", "video")
-        target = DOWNLOAD_DIR / item.get("target", key)
-        target.mkdir(parents=True, exist_ok=True)
+
+        target = DOWNLOAD_DIR / item.get(
+            "target",
+            key,
+        )
+        target.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        download_source = get_youtube_download_source(
+            item
+        )
+
+        if not download_source:
+            print(
+                f"[DOWNLOAD QUEUE] Missing URL for {key}",
+                flush=True,
+            )
+
+            record = {
+                "timestamp": datetime.now().isoformat(),
+                "key": key,
+                "mode": mode,
+                "url": item.get("url", ""),
+                "path": str(target),
+                "returncode": -1,
+                "stdout": "",
+                "stderr": "Missing download URL.",
+            }
+
+            remaining.append(item)
+            add_download_record(
+                FAILED_FILE,
+                record,
+            )
+            continue
+
+        print(
+            f"[DOWNLOAD QUEUE] Starting item "
+            f"{index}/{len(queue)}: {key}",
+            flush=True,
+        )
+
+        print(
+            f"[DOWNLOAD QUEUE] Source: {download_source}",
+            flush=True,
+        )
+
+        files_before = {
+            path.resolve()
+            for pattern in (
+                "*.m4a",
+                "*.mp3",
+                "*.opus",
+                "*.flac",
+                "*.ogg",
+            )
+            for path in target.glob(pattern)
+        }
+
+        common_options = [
+            "--socket-timeout",
+            "30",
+            "--retries",
+            "3",
+            "--fragment-retries",
+            "3",
+            "-f",
+            "bestaudio[ext=m4a]/bestaudio/best",
+            "--embed-thumbnail",
+            "--add-metadata",
+        ]
 
         if mode == "playlist":
-            output_template = "%(playlist_index,track_number|)02d - %(title)s.%(ext)s"
+            output_template = (
+                "%(playlist_index,track_number|)02d - "
+                "%(title)s.%(ext)s"
+            )
+
             cmd = [
                 "yt-dlp",
-                item["url"],
+                download_source,
                 "--yes-playlist",
                 "--ignore-errors",
                 "--no-abort-on-error",
-                "-f", "bestaudio[ext=m4a]/bestaudio/best",
-                "--embed-thumbnail",
-                "--add-metadata",
-                "-o", str(target / output_template),
+                *common_options,
+                "-o",
+                str(target / output_template),
             ]
         else:
             cmd = [
                 "yt-dlp",
-                item["url"],
+                download_source,
                 "--no-playlist",
-                "-f", "bestaudio[ext=m4a]/bestaudio/best",
-                "--embed-thumbnail",
-                "--add-metadata",
-                "-o", str(target / "%(title)s.%(ext)s"),
+                *common_options,
+                "-o",
+                str(
+                    target
+                    / "%(title)s.%(ext)s"
+                ),
             ]
 
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        try:
 
-        downloaded_files = (
-            list(target.glob("*.m4a")) +
-            list(target.glob("*.mp3")) +
-            list(target.glob("*.opus"))
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+
+        except subprocess.TimeoutExpired as exc:
+            stdout = (
+                exc.stdout
+                if isinstance(exc.stdout, str)
+                else ""
+            )
+            stderr = (
+                exc.stderr
+                if isinstance(exc.stderr, str)
+                else ""
+            )
+
+            print(
+                f"[DOWNLOAD QUEUE] Timeout for "
+                f"{index}/{len(queue)}: {key}",
+                flush=True,
+            )
+
+            record = {
+                "timestamp": datetime.now().isoformat(),
+                "key": key,
+                "mode": mode,
+                "url": item.get("url", ""),
+                "download_source": download_source,
+                "path": str(target),
+                "returncode": -1,
+                "stdout": stdout[-4000:],
+                "stderr": (
+                    stderr[-4000:]
+                    or "Download timed out after 300 seconds."
+                ),
+            }
+
+            remaining.append(item)
+            add_download_record(
+                FAILED_FILE,
+                record,
+            )
+            continue
+
+        print(
+            f"[DOWNLOAD QUEUE] Finished item "
+            f"{index}/{len(queue)}: {key}, "
+            f"returncode={result.returncode}",
+            flush=True,
+        )
+
+        files_after = {
+            path.resolve()
+            for pattern in (
+                "*.m4a",
+                "*.mp3",
+                "*.opus",
+                "*.flac",
+                "*.ogg",
+            )
+            for path in target.glob(pattern)
+        }
+
+        new_files = sorted(
+            files_after - files_before
         )
 
         record = {
             "timestamp": datetime.now().isoformat(),
             "key": key,
             "mode": mode,
-            "url": item["url"],
+            "url": item.get("url", ""),
+            "download_source": download_source,
             "path": str(target),
+            "downloaded_files": [
+                str(path)
+                for path in new_files
+            ],
             "returncode": result.returncode,
             "stdout": result.stdout[-4000:],
             "stderr": result.stderr[-4000:],
         }
 
-        if result.returncode == 0 or downloaded_files:
+        download_succeeded = bool(
+            result.returncode == 0
+            and new_files
+        )
+
+        if download_succeeded:
             processed.append(key)
-            add_download_record(DOWNLOADS_FILE, record)
+
+            add_download_record(
+                DOWNLOADS_FILE,
+                record,
+            )
+
+            print(
+                f"[DOWNLOAD QUEUE] Downloaded "
+                f"{len(new_files)} new file(s) for {key}",
+                flush=True,
+            )
         else:
             remaining.append(item)
-            add_download_record(FAILED_FILE, record)
 
-    save_json(PROCESSED_FILE, sorted(set(processed)))
-    save_json(QUEUE_FILE, remaining)
+            add_download_record(
+                FAILED_FILE,
+                record,
+            )
 
-    return redirect(url_for("downloads"))
+            print(
+                f"[DOWNLOAD QUEUE] Failed or no new file "
+                f"created for {key}",
+                flush=True,
+            )
+
+    successful_count = (
+        len(queue) - len(remaining)
+    )
+
+    print(
+        f"[DOWNLOAD QUEUE] Finished queue: "
+        f"{successful_count} successful, "
+        f"{len(remaining)} remaining",
+        flush=True,
+    )
+
+    save_json(
+        PROCESSED_FILE,
+        sorted(set(processed)),
+    )
+    save_json(
+        QUEUE_FILE,
+        remaining,
+    )
+
+    return redirect(
+        url_for("downloads")
+    )
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8999)
