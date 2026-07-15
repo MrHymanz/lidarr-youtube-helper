@@ -25,6 +25,7 @@ CACHE_FILE = Path("/app/cache.json")
 SETTINGS_FILE = Path("/app/settings.json")
 DOWNLOADS_FILE = Path("/app/downloads.json")
 FAILED_FILE = Path("/app/failed.json")
+PLAYLISTS_FILE = Path("/app/playlists.json")
 
 HEADERS = {"X-Api-Key": LIDARR_API_KEY}
 
@@ -229,6 +230,62 @@ TRANSLATIONS = {
             "This action is performed separately. Select the replace option "
             "to safely remove the existing file before importing the new file."
         ),
+        "playlists": "Playlists",
+        "playlist_management": "Playlist management",
+        "playlist_management_help": (
+            "Save YouTube and YouTube Music playlists and manually add them "
+            "to the download queue."
+        ),
+        "add_playlist": "Add playlist",
+        "playlist_name": "Name",
+        "playlist_name_placeholder": "For example: Discover Weekly",
+        "playlist_url": "YouTube / YouTube Music playlist URL",
+        "playlist_url_placeholder": "Paste a playlist URL",
+        "playlist_target": "Optional target folder",
+        "playlist_target_placeholder": (
+            "Leave empty to use the normal download folder"
+        ),
+        "saved_playlists": "Saved playlists",
+        "no_saved_playlists": "No playlists have been saved yet.",
+        "add_to_queue": "Add to queue",
+        "delete": "Delete",
+        "playlist_name_url_required": (
+            "A playlist name and URL are required."
+        ),
+        "playlist_invalid_url": "Enter a valid playlist URL.",
+        "playlist_already_exists": (
+            "A playlist with this URL has already been saved."
+        ),
+        "playlist_added": "Playlist saved.",
+        "playlist_not_found": "Playlist not found.",
+        "playlist_already_queued": (
+            "This playlist is already in the download queue."
+        ),
+        "playlist_added_to_queue": (
+            "Playlist added to the download queue."
+        ),
+        "playlist_deleted": "Playlist deleted: {name}",
+        "optional": "Optional",
+        "playlist_name_placeholder": "Leave empty to retrieve the playlist name",
+        "playlist_url_required": "A playlist URL is required.",
+        "playlist_title_lookup_failed": (
+            "The playlist name could not be retrieved. Enter a name manually."
+        ),
+        "playlist_title_generic": (
+            "YouTube Music returned only a generic mix name. "
+            "Enter the desired playlist name manually."
+        ),
+        "add_all_playlists_to_queue": "Add all playlists to queue",
+        "playlists_added_to_queue": (
+            "{added} playlist(s) added to the queue. "
+            "{skipped} playlist(s) skipped."
+        ),
+        "all_playlists_already_queued": (
+            "All saved playlists are already in the download queue."
+        ),
+        "playlist_deleted_with_queue": (
+            "Playlist deleted and removed from the download queue: {name}"
+        ),
     },
     "nl": {
         "language_name": "Nederlands",
@@ -429,6 +486,64 @@ TRANSLATIONS = {
             "Gebruik dit alleen om een bestand te testen, opnieuw te proberen "
             "of een bestaand bestand te vervangen."
         ),
+        "playlists": "Playlists",
+        "playlist_management": "Playlistbeheer",
+        "playlist_management_help": (
+            "Sla YouTube- en YouTube Music-playlists op en voeg ze "
+            "handmatig toe aan de downloadwachtrij."
+        ),
+        "add_playlist": "Playlist toevoegen",
+        "playlist_name": "Naam",
+        "playlist_name_placeholder": "Bijvoorbeeld: Discover Weekly",
+        "playlist_url": "YouTube / YouTube Music-playlist-URL",
+        "playlist_url_placeholder": "Plak hier een playlist-URL",
+        "playlist_target": "Optionele doelmap",
+        "playlist_target_placeholder": (
+            "Laat leeg om de normale downloadmap te gebruiken"
+        ),
+        "saved_playlists": "Opgeslagen playlists",
+        "no_saved_playlists": "Er zijn nog geen playlists opgeslagen.",
+        "add_to_queue": "Aan wachtrij toevoegen",
+        "delete": "Verwijderen",
+        "playlist_name_url_required": (
+            "Een playlistnaam en URL zijn verplicht."
+        ),
+        "playlist_invalid_url": "Voer een geldige playlist-URL in.",
+        "playlist_already_exists": (
+            "Er is al een playlist met deze URL opgeslagen."
+        ),
+        "playlist_added": "Playlist opgeslagen.",
+        "playlist_not_found": "Playlist niet gevonden.",
+        "playlist_already_queued": (
+            "Deze playlist staat al in de downloadwachtrij."
+        ),
+        "playlist_added_to_queue": (
+            "Playlist is aan de downloadwachtrij toegevoegd."
+        ),
+        "playlist_deleted": "Playlist verwijderd: {name}",
+        "optional": "Optioneel",
+        "playlist_name_placeholder": (
+            "Laat leeg om de playlistnaam automatisch op te halen"
+        ),
+        "playlist_url_required": "Een playlist-URL is verplicht.",
+        "playlist_title_lookup_failed": (
+            "De playlistnaam kon niet worden opgehaald. Vul de naam handmatig in."
+        ),
+        "playlist_title_generic": (
+            "YouTube Music gaf alleen een algemene mixnaam terug. "
+            "Vul de gewenste playlistnaam handmatig in."
+        ),
+        "add_all_playlists_to_queue": "Alle playlists aan wachtrij toevoegen",
+        "playlists_added_to_queue": (
+            "{added} playlist(s) aan de wachtrij toegevoegd. "
+            "{skipped} playlist(s) overgeslagen."
+        ),
+        "all_playlists_already_queued": (
+            "Alle opgeslagen playlists staan al in de downloadwachtrij."
+        ),
+        "playlist_deleted_with_queue": (
+            "Playlist verwijderd en uit de downloadwachtrij gehaald: {name}"
+        ),
     },
     "no": {
         "language_name": "Norsk",
@@ -626,6 +741,64 @@ TRANSLATIONS = {
         "individual_import_help": (
             "Denne handlingen utføres separat. Velg erstatningsalternativet "
             "for å fjerne den eksisterende filen på en sikker måte før den nye filen importeres."
+        ),
+        "playlists": "Spillelister",
+        "playlist_management": "Spillelisteadministrasjon",
+        "playlist_management_help": (
+            "Lagre spillelister fra YouTube og YouTube Music og legg dem "
+            "manuelt til i nedlastingskøen."
+        ),
+        "add_playlist": "Legg til spilleliste",
+        "playlist_name": "Navn",
+        "playlist_name_placeholder": "For eksempel: Discover Weekly",
+        "playlist_url": "URL til YouTube / YouTube Music-spilleliste",
+        "playlist_url_placeholder": "Lim inn en spilleliste-URL",
+        "playlist_target": "Valgfri målmappe",
+        "playlist_target_placeholder": (
+            "La feltet stå tomt for å bruke den vanlige nedlastingsmappen"
+        ),
+        "saved_playlists": "Lagrede spillelister",
+        "no_saved_playlists": "Ingen spillelister er lagret ennå.",
+        "add_to_queue": "Legg til i kø",
+        "delete": "Slett",
+        "playlist_name_url_required": (
+            "Navn og URL for spillelisten er påkrevd."
+        ),
+        "playlist_invalid_url": "Oppgi en gyldig spilleliste-URL.",
+        "playlist_already_exists": (
+            "En spilleliste med denne URL-en er allerede lagret."
+        ),
+        "playlist_added": "Spillelisten er lagret.",
+        "playlist_not_found": "Spillelisten ble ikke funnet.",
+        "playlist_already_queued": (
+            "Denne spillelisten ligger allerede i nedlastingskøen."
+        ),
+        "playlist_added_to_queue": (
+            "Spillelisten er lagt til i nedlastingskøen."
+        ),
+        "playlist_deleted": "Spilleliste slettet: {name}",
+        "optional": "Valgfritt",
+        "playlist_name_placeholder": (
+            "Laat leeg om de playlistnaam automatisch op te halen"
+        ),
+        "playlist_url_required": "Een playlist-URL is verplicht.",
+        "playlist_title_lookup_failed": (
+            "De playlistnaam kon niet worden opgehaald. Vul de naam handmatig in."
+        ),
+        "playlist_title_generic": (
+            "YouTube Music returnerte bare et generisk miksnavn. "
+            "Skriv inn ønsket spillelistenavn manuelt."
+        ),
+        "add_all_playlists_to_queue": "Legg alle spillelister til i køen",
+        "playlists_added_to_queue": (
+            "{added} spilleliste(r) lagt til i køen. "
+            "{skipped} spilleliste(r) hoppet over."
+        ),
+        "all_playlists_already_queued": (
+            "Alle lagrede spillelister ligger allerede i nedlastingskøen."
+        ),
+        "playlist_deleted_with_queue": (
+            "Spillelisten ble slettet og fjernet fra nedlastingskøen: {name}"
         ),
     },
 }
@@ -896,6 +1069,53 @@ def get_incomplete_albums():
 
     return albums
 
+def is_generic_playlist_title(title):
+    if not title:
+        return True
+
+    generic_patterns = [
+        r"^My Mix \d+$",
+        r"^Mijn mix \d+$",
+        r"^Mix \d+$",
+    ]
+
+    return any(
+        re.match(pattern, title, re.IGNORECASE)
+        for pattern in generic_patterns
+    )
+
+def get_playlist_title(url):
+    command = [
+        "yt-dlp",
+        "--flat-playlist",
+        "--playlist-items",
+        "1",
+        "--print",
+        "%(playlist_title)s",
+        "--no-warnings",
+        url,
+    ]
+
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (subprocess.SubprocessError, OSError):
+        return None
+
+    if result.returncode != 0:
+        return None
+
+    for line in result.stdout.splitlines():
+        title = line.strip()
+
+        if title and title not in {"NA", "None"}:
+            return title
+
+    return None    
 
 @app.route("/incomplete")
 def incomplete():
@@ -918,6 +1138,230 @@ def clear_completed():
 def clear_failed():
     save_json(FAILED_FILE, [])
     return redirect(url_for("downloads"))
+
+@app.route("/playlists")
+def playlists():
+    saved_playlists = load_json(PLAYLISTS_FILE, [])
+    queue = load_json(QUEUE_FILE, [])
+
+    queued_playlist_urls = {
+        item.get("url")
+        for item in queue
+        if item.get("mode") == "playlist"
+    }
+
+    return render_template(
+        "playlists.html",
+        playlists=saved_playlists,
+        queued_playlist_urls=queued_playlist_urls,
+        tr=t(),
+        lidarr_url=LIDARR_URL,
+    )
+
+
+@app.route("/playlists/add", methods=["POST"])
+def add_playlist():
+    tr = t()
+
+    name = request.form.get("name", "").strip()
+    url = request.form.get("url", "").strip()
+    target = request.form.get("target", "").strip()
+
+    if not url:
+        flash(tr["playlist_url_required"], "error")
+        return redirect(url_for("playlists"))
+
+    parsed_url = urlparse(url)
+
+    allowed_hosts = {
+        "youtube.com",
+        "www.youtube.com",
+        "music.youtube.com",
+        "youtu.be",
+    }
+
+    if (
+        parsed_url.scheme not in {"http", "https"}
+        or parsed_url.hostname not in allowed_hosts
+    ):
+        flash(tr["playlist_invalid_url"], "error")
+        return redirect(url_for("playlists"))
+
+    if not name:
+        detected_name = get_playlist_title(url)
+
+        if is_generic_playlist_title(detected_name):
+            flash(tr["playlist_title_generic"], "warning")
+            return redirect(url_for("playlists"))
+
+        name = detected_name
+
+    if not name:
+        flash(tr["playlist_title_lookup_failed"], "error")
+        return redirect(url_for("playlists"))
+
+    saved_playlists = load_json(PLAYLISTS_FILE, [])
+
+    duplicate = any(
+        playlist.get("url", "").strip() == url
+        for playlist in saved_playlists
+    )
+
+    if duplicate:
+        flash(tr["playlist_already_exists"], "warning")
+        return redirect(url_for("playlists"))
+
+    saved_playlists.append({
+        "name": name,
+        "url": url,
+        "target": target,
+    })
+
+    save_json(PLAYLISTS_FILE, saved_playlists)
+
+    flash(tr["playlist_added"], "success")
+    return redirect(url_for("playlists"))
+
+
+@app.route(
+    "/playlists/<int:playlist_index>/queue",
+    methods=["POST"],
+)
+def queue_playlist(playlist_index):
+    tr = t()
+    saved_playlists = load_json(PLAYLISTS_FILE, [])
+
+    if not 0 <= playlist_index < len(saved_playlists):
+        flash(tr["playlist_not_found"], "error")
+        return redirect(url_for("playlists"))
+
+    playlist = saved_playlists[playlist_index]
+    queue = load_json(QUEUE_FILE, [])
+
+    queue_item = {
+        "key": playlist["name"],
+        "url": playlist["url"],
+        "mode": "playlist",
+        "target": playlist.get("target", ""),
+    }
+
+    already_queued = any(
+        item.get("url") == queue_item["url"]
+        and item.get("mode") == "playlist"
+        for item in queue
+    )
+
+    if already_queued:
+        flash(tr["playlist_already_queued"], "warning")
+        return redirect(url_for("playlists"))
+
+    queue.append(queue_item)
+    save_json(QUEUE_FILE, queue)
+
+    flash(tr["playlist_added_to_queue"], "success")
+    return redirect(url_for("playlists"))
+
+
+@app.route(
+    "/playlists/<int:playlist_index>/delete",
+    methods=["POST"],
+)
+def delete_playlist(playlist_index):
+    tr = t()
+    saved_playlists = load_json(PLAYLISTS_FILE, [])
+
+    if not 0 <= playlist_index < len(saved_playlists):
+        flash(tr["playlist_not_found"], "error")
+        return redirect(url_for("playlists"))
+
+    deleted_playlist = saved_playlists.pop(playlist_index)
+    deleted_url = deleted_playlist.get("url", "").strip()
+
+    save_json(PLAYLISTS_FILE, saved_playlists)
+
+    queue = load_json(QUEUE_FILE, [])
+
+    filtered_queue = [
+        item
+        for item in queue
+        if not (
+            item.get("mode") == "playlist"
+            and item.get("url", "").strip() == deleted_url
+        )
+    ]
+
+    removed_from_queue = len(queue) - len(filtered_queue)
+
+    if removed_from_queue:
+        save_json(QUEUE_FILE, filtered_queue)
+
+        flash(
+            tr["playlist_deleted_with_queue"].format(
+                name=deleted_playlist.get("name", ""),
+            ),
+            "success",
+        )
+    else:
+        flash(
+            tr["playlist_deleted"].format(
+                name=deleted_playlist.get("name", ""),
+            ),
+            "success",
+        )
+
+    return redirect(url_for("playlists"))
+
+@app.route("/playlists/queue-all", methods=["POST"])
+def queue_all_playlists():
+    tr = t()
+
+    saved_playlists = load_json(PLAYLISTS_FILE, [])
+    queue = load_json(QUEUE_FILE, [])
+
+    queued_playlist_urls = {
+        item.get("url")
+        for item in queue
+        if item.get("mode") == "playlist"
+    }
+
+    added = 0
+    skipped = 0
+
+    for playlist in saved_playlists:
+        playlist_url = playlist.get("url", "").strip()
+
+        if not playlist_url:
+            skipped += 1
+            continue
+
+        if playlist_url in queued_playlist_urls:
+            skipped += 1
+            continue
+
+        queue.append({
+            "key": playlist.get("name", "Playlist"),
+            "url": playlist_url,
+            "mode": "playlist",
+            "target": playlist.get("target", ""),
+        })
+
+        queued_playlist_urls.add(playlist_url)
+        added += 1
+
+    if added:
+        save_json(QUEUE_FILE, queue)
+
+        flash(
+            tr["playlists_added_to_queue"].format(
+                added=added,
+                skipped=skipped,
+            ),
+            "success",
+        )
+    else:
+        flash(tr["all_playlists_already_queued"], "warning")
+
+    return redirect(url_for("playlists"))   
 
 @app.route("/settings", methods=["GET", "POST"])
 def settings():
@@ -3933,6 +4377,19 @@ def download_queue():
             files_after - files_before
         )
 
+        existing_audio_files = sorted(
+            path.resolve()
+            for pattern in (
+                "*.m4a",
+                "*.mp3",
+                "*.opus",
+                "*.flac",
+                "*.ogg",
+            )
+            for path in target.glob(pattern)
+            if path.is_file() and path.stat().st_size > 0
+        )
+
         record = {
             "timestamp": datetime.now().isoformat(),
             "key": key,
@@ -3944,15 +4401,25 @@ def download_queue():
                 str(path)
                 for path in new_files
             ],
+            "available_files": [
+                str(path)
+                for path in existing_audio_files
+            ],
             "returncode": result.returncode,
             "stdout": result.stdout[-4000:],
             "stderr": result.stderr[-4000:],
         }
 
-        download_succeeded = bool(
-            result.returncode == 0
-            and new_files
-        )
+        if mode == "playlist":
+            download_succeeded = bool(
+                result.returncode == 0
+                and new_files
+            )
+        else:
+            download_succeeded = bool(
+                result.returncode == 0
+                and existing_audio_files
+            )
 
         if download_succeeded:
             processed.append(key)
@@ -3962,11 +4429,19 @@ def download_queue():
                 record,
             )
 
-            print(
-                f"[DOWNLOAD QUEUE] Downloaded "
-                f"{len(new_files)} new file(s) for {key}",
-                flush=True,
-            )
+            if new_files:
+                print(
+                    f"[DOWNLOAD QUEUE] Downloaded "
+                    f"{len(new_files)} new file(s) for {key}",
+                    flush=True,
+                )
+            else:
+                print(
+                    f"[DOWNLOAD QUEUE] No new file created for {key}, "
+                    f"but {len(existing_audio_files)} existing audio file(s) "
+                    f"are available in staging",
+                    flush=True,
+                )
         else:
             remaining.append(item)
 
@@ -3976,8 +4451,8 @@ def download_queue():
             )
 
             print(
-                f"[DOWNLOAD QUEUE] Failed or no new file "
-                f"created for {key}",
+                f"[DOWNLOAD QUEUE] Failed or no usable audio file "
+                f"available for {key}",
                 flush=True,
             )
 

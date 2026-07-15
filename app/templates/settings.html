@@ -1,66 +1,61 @@
 <!doctype html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <title>{{ tr.settings_title }}</title>
-  <link rel="stylesheet" href="/static/style.css">
-</head>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ tr.settings_title }}</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
 
-<body>
-<div class="layout">
-
-  <aside class="sidebar">
-    <div class="logo">◉ Lidarr Helper</div>
-      <a class="nav" href="{{ lidarr_url }}" target="_blank">
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="logo">◉ Lidarr Helper</div>
+        <a class="nav" href="{{ lidarr_url }}" target="_blank">
           {{ tr.library }}
-      </a>
+        </a>
 
-      <a class="nav" href="/">
-          YouTube Helper
-      </a>
+        <a class="nav" href="/"> YouTube Helper </a>
 
-      <a class="nav" href="/downloads">
-          {{ tr.downloads }}
-      </a>
+        <a class="nav" href="/downloads"> {{ tr.downloads }} </a>
 
-      <a class="nav" href="/incomplete">
-          {{ tr.incomplete_albums }}
-      </a>
+        <a class="nav" href="/playlists"> {{ tr.playlists }} </a>
 
-      <a class="nav" href="{{ lidarr_url }}/wanted/missing" target="_blank">
+        <a class="nav" href="/incomplete"> {{ tr.incomplete_albums }} </a>
+
+        <a class="nav" href="{{ lidarr_url }}/wanted/missing" target="_blank">
           {{ tr.wanted }}
-      </a>
+        </a>
 
-      <a class="nav active" href="/settings">
-          {{ tr.settings }}
-      </a>
-  </aside>
+        <a class="nav active" href="/settings"> {{ tr.settings }} </a>
+      </aside>
 
-  <main class="content">
-    <h1>{{ tr.settings_title }}</h1>
+      <main class="content">
+        <h1>{{ tr.settings_title }}</h1>
 
-    <div class="card">
-      <form method="post" action="/settings">
-        <label>
-          <strong>{{ tr.language }}</strong>
-        </label>
+        <div class="card">
+          <form method="post" action="/settings">
+            <label>
+              <strong>{{ tr.language }}</strong>
+            </label>
 
-        <select name="language">
-          {% for code, lang in languages.items() %}
-            <option value="{{ code }}" {% if code == current_language %}selected{% endif %}>
-              {{ lang.language_name }}
-            </option>
-          {% endfor %}
-        </select>
+              <select name="language">
+                {% for code, lang in languages.items() %}
+                <option
+                  value="{{ code }}"
+                  {% if code == current_language %}selected{% endif %}
+                >
+                  {{ lang.language_name }}
+                </option>
+                {% endfor %}
+              </select>
 
-        <br><br>
+            <br /><br />
 
-        <button type="submit">{{ tr.save }}</button>
-        <a class="button-link" href="/">{{ tr.back }}</a>
-      </form>
+            <button type="submit">{{ tr.save }}</button>
+            <a class="button-link" href="/">{{ tr.back }}</a>
+          </form>
+        </div>
+      </main>
     </div>
-  </main>
-
-</div>
-</body>
+  </body>
 </html>

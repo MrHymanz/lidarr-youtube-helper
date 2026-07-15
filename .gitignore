@@ -15,6 +15,7 @@ app/processed.json
 app/settings.json
 app/downloads.json
 app/failed.json
+app/playlists.json
 
 # Logs
 *.log

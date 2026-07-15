@@ -13,4 +13,5 @@ services:
     volumes:
       - ./app:/app
       - /data/media/music:/data/media/music
+      - /data/downloads:/data/downloads
     restart: unless-stopped

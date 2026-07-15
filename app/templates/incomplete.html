@@ -1,41 +1,47 @@
 <!doctype html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <title>{{ tr.incomplete_albums }} - {{ tr.title }}</title>
-  <link rel="stylesheet" href="/static/style.css">
-</head>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ tr.incomplete_albums }} - {{ tr.title }}</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
 
-<body>
-<div class="layout">
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="logo">◉ Lidarr Helper</div>
+        <a class="nav" href="{{ lidarr_url }}" target="_blank"
+          >{{ tr.library }}</a
+        >
+        <a class="nav" href="/">YouTube Helper</a>
+        <a class="nav" href="/downloads">{{ tr.downloads }}</a>
+        <a class="nav" href="/playlists">{{ tr.playlists }}</a>
+        <a class="nav active" href="/incomplete">{{ tr.incomplete_albums }}</a>
+        <a class="nav" href="{{ lidarr_url }}/wanted/missing" target="_blank"
+          >{{ tr.wanted }}</a
+        >
+        <a class="nav" href="/settings">{{ tr.settings }}</a>
+      </aside>
 
-  <aside class="sidebar">
-    <div class="logo">◉ Lidarr Helper</div>
-    <a class="nav" href="{{ lidarr_url }}" target="_blank">{{ tr.library }}</a>
-    <a class="nav" href="/">YouTube Helper</a>
-    <a class="nav" href="/downloads">{{ tr.downloads }}</a>
-    <a class="nav active" href="/incomplete">{{ tr.incomplete_albums }}</a>
-    <a class="nav" href="{{ lidarr_url }}/wanted/missing" target="_blank">{{ tr.wanted }}</a>
-    <a class="nav" href="/settings">{{ tr.settings }}</a>
-  </aside>
+      <main class="content">
+        <h1>{{ tr.incomplete_albums }}</h1>
 
-  <main class="content">
-    <h1>{{ tr.incomplete_albums }}</h1>
+        <div class="card help-box">
+          <h3>{{ tr.partially_downloaded_albums }}</h3>
+          <p>{{ tr.incomplete_help_1 }}</p>
+          <p>{{ tr.incomplete_help_2 }}</p>
+        </div>
 
-    <div class="card help-box">
-      <h3>{{ tr.partially_downloaded_albums }}</h3>
-      <p>{{ tr.incomplete_help_1 }}</p>
-      <p>{{ tr.incomplete_help_2 }}</p>
-    </div>
+        <div class="card">
+          <h2>
+            {{ tr.albums }} <span class="queue-count">{{ albums|length }}</span>
+          </h2>
 
-    <div class="card">
-      <h2>{{ tr.albums }} <span class="queue-count">{{ albums|length }}</span></h2>
-
-      {% if albums %}
-        {% for album in albums %}
-          <div class="incomplete-record clickable-record"
-               onclick="window.location.href='/album/{{ album.id }}'">
-
+          {% if albums %} {% for album in albums %}
+          <div
+            class="incomplete-record clickable-record"
+            onclick="window.location.href='/album/{{ album.id }}'"
+          >
             <div class="record-main">
               <div class="album-title">
                 {{ album.artist }} - {{ album.album }} {{ album.year }}
@@ -44,37 +50,42 @@
             </div>
 
             <div class="progress-text">
-              {{ album.file_count }} / {{ album.track_count }} {{ tr.tracks_present }}
-              — {{ album.missing_count }} {{ tr.missing }}
+              {{ album.file_count }} / {{ album.track_count }} {{
+              tr.tracks_present }} — {{ album.missing_count }} {{ tr.missing }}
             </div>
 
             <div class="progress-bar">
-              <div class="progress-fill" style="width: {{ album.percent }}%;"></div>
+              <div
+                class="progress-fill"
+                style="width: {{ album.percent }}%;"
+              ></div>
             </div>
 
             <div class="search-links">
-              <a href="{{ album.music_search_url }}"
-                 target="_blank"
-                 rel="noopener noreferrer"
-                 onclick="event.stopPropagation();">
+              <a
+                href="{{ album.music_search_url }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                onclick="event.stopPropagation()"
+              >
                 {{ tr.open_music_search }}
               </a>
               |
-              <a href="{{ album.youtube_search_url }}"
-                 target="_blank"
-                 rel="noopener noreferrer"
-                 onclick="event.stopPropagation();">
+              <a
+                href="{{ album.youtube_search_url }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                onclick="event.stopPropagation()"
+              >
                 {{ tr.open_youtube_search }}
               </a>
             </div>
           </div>
-        {% endfor %}
-      {% else %}
-        <p class="muted">{{ tr.no_incomplete_albums }}</p>
-      {% endif %}
+          {% endfor %} {% else %}
+          <p class="muted">{{ tr.no_incomplete_albums }}</p>
+          {% endif %}
+        </div>
+      </main>
     </div>
-  </main>
-
-</div>
-</body>
+  </body>
 </html>

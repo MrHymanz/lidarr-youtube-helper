@@ -617,3 +617,73 @@ pre {
 button.secondary {
   opacity: 0.85;
 }
+
+.playlist-form {
+  display: grid;
+  gap: 10px;
+}
+
+.playlist-form label {
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.playlist-form input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-actions {
+  margin-top: 8px;
+}
+
+.playlist-list {
+  display: grid;
+  gap: 12px;
+}
+
+.playlist-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 14px;
+  border: 1px solid var(--border-color, #3a3a3a);
+  border-radius: 6px;
+}
+
+.playlist-details {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.playlist-details a {
+  overflow-wrap: anywhere;
+}
+
+.playlist-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.playlist-actions form {
+  margin: 0;
+}
+
+@media (max-width: 700px) {
+  .playlist-item {
+    flex-direction: column;
+  }
+
+  .playlist-actions {
+    width: 100%;
+  }
+}
+
+.playlist-actions button:disabled {
+  cursor: default;
+  opacity: 0.65;
+}

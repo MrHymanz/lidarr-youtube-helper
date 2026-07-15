@@ -1,0 +1,177 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ tr.playlists }} - {{ tr.title }}</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="logo">◉ Lidarr Helper</div>
+
+        <a class="nav" href="{{ lidarr_url }}" target="_blank">
+          {{ tr.library }}
+        </a>
+
+        <a class="nav" href="/">YouTube Helper</a>
+
+        <a class="nav" href="/downloads"> {{ tr.downloads }} </a>
+
+        <a class="nav active" href="/playlists"> {{ tr.playlists }} </a>
+
+        <a class="nav" href="/incomplete"> {{ tr.incomplete_albums }} </a>
+
+        <a class="nav" href="{{ lidarr_url }}/wanted/missing" target="_blank">
+          {{ tr.wanted }}
+        </a>
+
+        <a class="nav" href="/settings"> {{ tr.settings }} </a>
+      </aside>
+
+      <main class="content">
+        <h1>{{ tr.playlist_management }}</h1>
+
+        <p class="muted">{{ tr.playlist_management_help }}</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %} {% if
+        messages %}
+        <div class="flash-messages">
+          {% for category, message in messages %}
+          <div class="flash-message flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+        {% endif %} {% endwith %}
+
+        <div class="card">
+          <h2>{{ tr.add_playlist }}</h2>
+
+          <form
+            method="post"
+            action="{{ url_for('add_playlist') }}"
+            class="playlist-form"
+          >
+            <label for="playlist-name">
+              {{ tr.playlist_name }}
+              <span class="muted">({{ tr.optional }})</span>
+            </label>
+
+            <input
+              id="playlist-name"
+              name="name"
+              type="text"
+              placeholder="{{ tr.playlist_name_placeholder }}"
+            />
+
+            <label for="playlist-url"> {{ tr.playlist_url }} </label>
+
+            <input
+              id="playlist-url"
+              name="url"
+              type="url"
+              required
+              placeholder="{{ tr.playlist_url_placeholder }}"
+            />
+
+            <label for="playlist-target">
+              {{ tr.playlist_target }}
+              <span class="muted">({{ tr.optional }})</span>
+            </label>
+
+            <input
+              id="playlist-target"
+              name="target"
+              type="text"
+              placeholder="{{ tr.playlist_target_placeholder }}"
+            />
+
+            <div class="form-actions">
+              <button type="submit">{{ tr.add_playlist }}</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="section-header">
+            <h2>
+              {{ tr.saved_playlists }}
+              <span class="queue-count">{{ playlists|length }}</span>
+            </h2>
+
+            {% if playlists|length > 1 %}
+            <form
+              method="post"
+              action="{{ url_for('queue_all_playlists') }}"
+            >
+              <button type="submit">
+                {{ tr.add_all_playlists_to_queue }}
+              </button>
+            </form>
+            {% endif %}
+          </div>
+
+          {% if playlists %}
+          <div class="playlist-list">
+            {% for playlist in playlists %}
+            <div class="playlist-item">
+              <div class="playlist-details">
+                <strong>{{ playlist.name }}</strong>
+
+                <small>
+                  <a
+                    href="{{ playlist.url }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {{ playlist.url }}
+                  </a>
+                </small>
+
+                {% if playlist.target %}
+                <small> {{ tr.target }}: {{ playlist.target }} </small>
+                {% endif %}
+              </div>
+
+              <div class="playlist-actions">
+                {% if playlist.url in queued_playlist_urls %}
+                <button type="button" disabled>
+                  ✓ {{ tr.queued }}
+                </button>
+                {% else %}
+                <form
+                  method="post"
+                  action="{{ url_for(
+                    'queue_playlist',
+                    playlist_index=loop.index0
+                  ) }}"
+                >
+                  <button type="submit">
+                    {{ tr.add_to_queue }}
+                  </button>
+                </form>
+                {% endif %}
+
+                <form
+                  method="post"
+                  action="{{ url_for(
+                    'delete_playlist',
+                    playlist_index=loop.index0
+                  ) }}"
+                >
+                  <button class="danger-button" type="submit">
+                    {{ tr.delete }}
+                  </button>
+                </form>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="muted">{{ tr.no_saved_playlists }}</p>
+          {% endif %}
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
