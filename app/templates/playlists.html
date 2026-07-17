@@ -86,6 +86,19 @@
               placeholder="{{ tr.playlist_target_placeholder }}"
             />
 
+            <label for="playlist-max-items">
+              {{ tr.playlist_max_items }}
+            </label>
+
+            <input
+              id="playlist-max-items"
+              name="max_items"
+              type="number"
+              min="1"
+              max="200"
+              value="20"
+            />
+
             <div class="form-actions">
               <button type="submit">{{ tr.add_playlist }}</button>
             </div>
@@ -129,8 +142,15 @@
                 </small>
 
                 {% if playlist.target %}
-                <small> {{ tr.target }}: {{ playlist.target }} </small>
+                <small>
+                  {{ tr.target }}: {{ playlist.target }}
+                </small>
                 {% endif %}
+
+                <small>
+                  {{ tr.playlist_max_items }}:
+                  {{ playlist.max_items or 20 }}
+                </small>
               </div>
 
               <div class="playlist-actions">

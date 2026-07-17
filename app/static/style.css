@@ -687,3 +687,14 @@ button.secondary {
   cursor: default;
   opacity: 0.65;
 }
+
+.queue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.queue-actions form {
+  margin: 0;
+}

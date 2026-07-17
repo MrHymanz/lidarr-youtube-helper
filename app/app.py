@@ -286,6 +286,16 @@ TRANSLATIONS = {
         "playlist_deleted_with_queue": (
             "Playlist deleted and removed from the download queue: {name}"
         ),
+        "playlist_watch_url_hint": (
+            "This YouTube Music mix cannot be downloaded using the playlist URL.\n\n"
+            "Open the mix, click one of the tracks so the URL becomes:\n"
+            "https://music.youtube.com/watch?v=...&list=...\n\n"
+            "Then add that watch URL instead.\n"
+        ),
+        "clear_queue": "Clear queue",
+        "playlist_max_items": "Maximum number of tracks",
+        "downloaded_new": "Newly downloaded",
+        "available_total": "Total available",
     },
     "nl": {
         "language_name": "Nederlands",
@@ -544,6 +554,16 @@ TRANSLATIONS = {
         "playlist_deleted_with_queue": (
             "Playlist verwijderd en uit de downloadwachtrij gehaald: {name}"
         ),
+        "playlist_watch_url_hint": (
+            "Deze YouTube Music-mix kan niet worden gedownload met de playlist-URL.\n\n"
+            "Open de mix, klik op een nummer zodat de URL verandert naar:\n"
+            "https://music.youtube.com/watch?v=...&list=...\n\n"
+            "Voeg vervolgens die watch-URL toe.\n"
+        ),
+        "clear_queue": "Wachtrij wissen",
+        "playlist_max_items": "Maximum aantal nummers",
+        "downloaded_new": "Nieuw gedownload",
+        "available_total": "Totaal aanwezig",
     },
     "no": {
         "language_name": "Norsk",
@@ -800,6 +820,16 @@ TRANSLATIONS = {
         "playlist_deleted_with_queue": (
             "Spillelisten ble slettet og fjernet fra nedlastingskøen: {name}"
         ),
+        "playlist_watch_url_hint": (
+            "Denne YouTube Music-miksen kan ikke lastes ned med spillelisteadressen.\n\n"
+            "Åpne miksen og klikk på et spor slik at adressen blir:\n"
+            "https://music.youtube.com/watch?v=...&list=...\n\n"
+            "Legg deretter til denne watch-adressen.\n"
+        ),
+        "clear_queue": "Tøm kø",
+        "playlist_max_items": "Maksimalt antall spor",
+        "downloaded_new": "Nylig lastet ned",
+        "available_total": "Totalt tilgjengelig",
     },
 }
 
@@ -1158,6 +1188,15 @@ def playlists():
         lidarr_url=LIDARR_URL,
     )
 
+def is_music_mix_playlist_url(url):
+    parsed = urlparse(url)
+
+    if parsed.hostname != "music.youtube.com":
+        return False
+
+    playlist_id = parse_qs(parsed.query).get("list", [""])[0]
+
+    return playlist_id.startswith("RD")
 
 @app.route("/playlists/add", methods=["POST"])
 def add_playlist():
@@ -1166,6 +1205,15 @@ def add_playlist():
     name = request.form.get("name", "").strip()
     url = request.form.get("url", "").strip()
     target = request.form.get("target", "").strip()
+
+    max_items_raw = request.form.get("max_items", "20").strip()
+
+    try:
+        max_items = int(max_items_raw)
+    except ValueError:
+        max_items = 20
+
+    max_items = max(1, min(max_items, 200))
 
     if not url:
         flash(tr["playlist_url_required"], "error")
@@ -1215,6 +1263,7 @@ def add_playlist():
         "name": name,
         "url": url,
         "target": target,
+        "max_items": max_items,
     })
 
     save_json(PLAYLISTS_FILE, saved_playlists)
@@ -1243,6 +1292,7 @@ def queue_playlist(playlist_index):
         "url": playlist["url"],
         "mode": "playlist",
         "target": playlist.get("target", ""),
+        "max_items": playlist.get("max_items", 20),
     }
 
     already_queued = any(
@@ -1343,6 +1393,7 @@ def queue_all_playlists():
             "url": playlist_url,
             "mode": "playlist",
             "target": playlist.get("target", ""),
+            "max_items": playlist.get("max_items", 20),
         })
 
         queued_playlist_urls.add(playlist_url)
@@ -4202,11 +4253,10 @@ def download_queue():
     for index, item in enumerate(queue, start=1):
         key = item["key"]
         mode = item.get("mode", "video")
+        max_items = None
+        target_name = item.get("target", "").strip() or key
+        target = DOWNLOAD_DIR / target_name
 
-        target = DOWNLOAD_DIR / item.get(
-            "target",
-            key,
-        )
         target.mkdir(
             parents=True,
             exist_ok=True,
@@ -4282,16 +4332,41 @@ def download_queue():
                 "%(title)s.%(ext)s"
             )
 
+            max_items = item.get("max_items")
+
             cmd = [
                 "yt-dlp",
                 download_source,
                 "--yes-playlist",
                 "--ignore-errors",
                 "--no-abort-on-error",
-                *common_options,
-                "-o",
-                str(target / output_template),
             ]
+
+            if max_items is not None:
+                try:
+                    max_items = int(max_items)
+                except (TypeError, ValueError):
+                    max_items = 20
+
+                max_items = max(
+                    1,
+                    min(max_items, 200),
+                )
+
+                cmd.extend(
+                    [
+                        "--playlist-items",
+                        f"1:{max_items}",
+                    ]
+                )
+
+            cmd.extend(
+                [
+                    *common_options,
+                    "-o",
+                    str(target / output_template),
+                ]
+            )
         else:
             cmd = [
                 "yt-dlp",
@@ -4390,6 +4465,25 @@ def download_queue():
             if path.is_file() and path.stat().st_size > 0
         )
 
+        stderr = result.stderr[-4000:]
+
+        already_downloaded = (
+            "has already been downloaded" in result.stdout
+            or "[download] 100%" in result.stdout
+        )
+
+        if (
+            mode == "playlist"
+            and result.returncode != 0
+            and is_music_mix_playlist_url(download_source)
+            and "The playlist does not exist" in stderr
+        ):
+            stderr = (
+                t()["playlist_watch_url_hint"]
+                + "\n\n----------------------------------------\n\n"
+                + stderr
+            )
+
         record = {
             "timestamp": datetime.now().isoformat(),
             "key": key,
@@ -4405,15 +4499,24 @@ def download_queue():
                 str(path)
                 for path in existing_audio_files
             ],
+            "max_items": max_items,
+            "new_file_count": len(new_files),
+            "available_file_count": len(existing_audio_files),
             "returncode": result.returncode,
             "stdout": result.stdout[-4000:],
-            "stderr": result.stderr[-4000:],
+            "stderr": stderr,
         }
 
         if mode == "playlist":
             download_succeeded = bool(
                 result.returncode == 0
-                and new_files
+                and (
+                    new_files
+                    or (
+                        already_downloaded
+                        and existing_audio_files
+                    )
+                )
             )
         else:
             download_succeeded = bool(
@@ -4437,9 +4540,10 @@ def download_queue():
                 )
             else:
                 print(
-                    f"[DOWNLOAD QUEUE] No new file created for {key}, "
-                    f"but {len(existing_audio_files)} existing audio file(s) "
-                    f"are available in staging",
+                    f"[DOWNLOAD QUEUE] No new files created for {key}, "
+                    f"but yt-dlp confirmed that "
+                    f"{len(existing_audio_files)} audio file(s) "
+                    f"are already available in staging",
                     flush=True,
                 )
         else:

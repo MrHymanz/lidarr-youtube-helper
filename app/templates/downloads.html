@@ -32,9 +32,17 @@
           </h2>
 
           {% if queue %}
-          <form method="post" action="/download" class="queue-actions">
-            <button type="submit">{{ tr.download_queue }}</button>
-          </form>
+          <div class="queue-actions">
+            <form method="post" action="/download">
+              <button type="submit">{{ tr.download_queue }}</button>
+            </form>
+
+            <form method="post" action="/queue/clear">
+              <button class="danger-button" type="submit">
+                {{ tr.clear_queue }}
+              </button>
+            </form>
+          </div>
 
           <ul class="queue-list">
             {% for item in queue %}
