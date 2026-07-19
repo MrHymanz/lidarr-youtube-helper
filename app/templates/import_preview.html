@@ -1,0 +1,432 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ tr.import_workflow }} - {{ tr.title }}</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  </head>
+
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="logo">◉ Lidarr Helper</div>
+
+        <!-- prettier-ignore -->
+        <a class="nav" href="{{ lidarr_url }}" target="_blank">
+          {{ tr.library }}
+        </a>
+
+        <a class="nav" href="/">YouTube Helper</a>
+        <a class="nav" href="/downloads">{{ tr.downloads }}</a>
+        <a class="nav" href="/playlists">{{ tr.playlists }}</a>
+        <a class="nav active" href="/incomplete">
+          {{ tr.incomplete_albums }}
+        </a>
+
+        <!-- prettier-ignore -->
+        <a class="nav" href="{{ lidarr_url }}/wanted/missing" target="_blank">
+          {{ tr.wanted }}
+        </a>
+
+        <a class="nav" href="/settings">{{ tr.settings }}</a>
+      </aside>
+
+      <main class="content">
+        <h1>{{ artist }} - {{ album_title }}</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %} {% if
+        messages %}
+        <div class="flash-messages">
+          {% for category, message in messages %}
+          <div class="flash-message flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+        {% endif %} {% endwith %}
+
+        <div class="card help-box">
+          <h3>{{ tr.import_workflow }}</h3>
+          <p>{{ tr.import_workflow_help }}</p>
+        </div>
+
+        <div class="card">
+          <h2>{{ tr.source_folder }}</h2>
+          <p><code>{{ source_path }}</code></p>
+
+          {% if source_exists and import_items %}
+          <p class="status-success">{{ tr.source_found }}</p>
+          <p>{{ tr.audio_files_found }}: {{ import_items|length }}</p>
+          {% else %}
+          <p class="status-failed">{{ tr.source_not_found }}</p>
+          {% endif %}
+        </div>
+
+        {% if import_items %}
+        <div class="card batch-import-card">
+          <div class="section-header">
+            <div>
+              <h2>{{ tr.batch_import_primary_title }}</h2>
+              <p class="muted">{{ tr.batch_import_primary_help }}</p>
+            </div>
+
+            <span
+              class="status-count success"
+              id="batch-selected-count"
+              data-template="{{ tr.batch_selected_count }}"
+            >
+              {{ tr.batch_selected_count.replace( "{count}",
+              batch_ready_count|string ) }}
+            </span>
+          </div>
+
+          <!-- prettier-ignore -->
+          <form
+            id="batch-import-form"
+            method="post"
+            action="{{ url_for('manual_import_batch', album_id=album.id) }}"
+            onsubmit="disableBatchSubmit(this)"
+          >
+            <button id="batch-import-button" type="submit">
+              {{ tr.batch_import_selected }}
+            </button>
+          </form>
+        </div>
+
+        {% for item in import_items %}
+        <div class="card import-item">
+          <h2>{{ item.filename }}</h2>
+
+          <div class="import-item-status">
+            {% if item.batch_ready %}
+            <label class="batch-select-option">
+              <input
+                class="batch-track-checkbox"
+                type="checkbox"
+                name="filenames"
+                value="{{ item.filename }}"
+                form="batch-import-form"
+                checked
+              />
+
+              <span>
+                <strong>{{ tr.ready_for_batch_import }}</strong>
+                <br />
+                <small>{{ tr.include_in_batch_import }}</small>
+              </span>
+            </label>
+
+            {% elif item.track_already_imported %}
+            <div class="status-panel warning">
+              <strong>{{ tr.not_ready_for_batch_import }}</strong>
+              <p>{{ tr.batch_existing_track_excluded }}</p>
+            </div>
+
+            {% elif item.track and not item.metadata_ready %}
+            <div class="status-panel warning">
+              <strong>{{ tr.metadata_needs_changes }}</strong>
+              <p>{{ tr.batch_metadata_not_ready }}</p>
+            </div>
+
+            {% elif not item.track %}
+            <div class="status-panel error">
+              <strong>{{ tr.not_ready_for_batch_import }}</strong>
+              <p>{{ tr.track_match_failed_files.replace("{count}", "1") }}</p>
+            </div>
+            {% endif %}
+          </div>
+
+          <p><code>{{ item.path }}</code></p>
+
+          {% if not item.track %}
+          <div class="flash-message flash-warning">
+            {{ tr.track_match_failed_files.replace("{count}", "1") }}
+          </div>
+
+          {% else %}
+          <div class="metadata-columns">
+            <div class="card">
+              <h3>{{ tr.current_metadata }}</h3>
+
+              <dl class="metadata-list">
+                <dt>{{ tr.artist }}</dt>
+                <dd>{{ item.current.artist or "-" }}</dd>
+
+                <dt>{{ tr.album_artist }}</dt>
+                <dd>{{ item.current.album_artist or "-" }}</dd>
+
+                <dt>{{ tr.album }}</dt>
+                <dd>{{ item.current.album or "-" }}</dd>
+
+                <dt>{{ tr.track_title }}</dt>
+                <dd>{{ item.current.title or "-" }}</dd>
+
+                <dt>{{ tr.track_number }}</dt>
+                <dd>{{ item.current.track or "-" }}</dd>
+
+                <dt>{{ tr.disc_number }}</dt>
+                <dd>{{ item.current.disc or "-" }}</dd>
+
+                <dt>{{ tr.year }}</dt>
+                <dd>{{ item.current.year or "-" }}</dd>
+              </dl>
+            </div>
+
+            <div class="card best-match">
+              <h3>{{ tr.suggested_metadata }}</h3>
+
+              <!-- prettier-ignore -->
+              <form
+                method="post"
+                action="{{ url_for('manual_import_apply', album_id=album.id) }}"
+              >
+                <input
+                  type="hidden"
+                  name="filename"
+                  value="{{ item.filename }}"
+                />
+
+                <label>
+                  {{ tr.artist }}
+                  <input
+                    type="text"
+                    name="artist"
+                    value="{{ item.suggested.artist }}"
+                    required
+                  />
+                </label>
+
+                <label>
+                  {{ tr.album_artist }}
+                  <input
+                    type="text"
+                    name="album_artist"
+                    value="{{ item.suggested.album_artist }}"
+                    required
+                  />
+                </label>
+
+                <label>
+                  {{ tr.album }}
+                  <input
+                    type="text"
+                    name="album"
+                    value="{{ item.suggested.album }}"
+                    required
+                  />
+                </label>
+
+                <label>
+                  {{ tr.track_title }}
+                  <input
+                    type="text"
+                    name="title"
+                    value="{{ item.suggested.title }}"
+                    required
+                  />
+                </label>
+
+                <label>
+                  {{ tr.track_number }}
+                  <input
+                    type="number"
+                    name="track"
+                    min="1"
+                    value="{{ item.suggested.track }}"
+                  />
+                </label>
+
+                <label>
+                  {{ tr.disc_number }}
+                  <input
+                    type="number"
+                    name="disc"
+                    min="1"
+                    value="{{ item.suggested.disc }}"
+                  />
+                </label>
+
+                <label>
+                  {{ tr.year }}
+                  <input
+                    type="number"
+                    name="year"
+                    min="1000"
+                    max="9999"
+                    value="{{ item.suggested.year }}"
+                  />
+                </label>
+
+                <label>
+                  {{ tr.genre }}
+                  <input
+                    type="text"
+                    name="genre"
+                    value="{{ item.suggested.genre }}"
+                  />
+                </label>
+
+                <label>
+                  {{ tr.filename }}
+                  <input
+                    type="text"
+                    name="destination_filename"
+                    value="{{ item.suggested.filename }}"
+                    required
+                  />
+                </label>
+
+                {% if item.metadata_ready %}
+                <div class="status-panel success">
+                  <strong>✓ {{ tr.metadata_ready }}</strong>
+                </div>
+
+                <button type="submit" class="secondary">
+                  {{ tr.edit_metadata }}
+                </button>
+
+                {% else %}
+                <div class="status-panel warning">
+                  <strong>{{ tr.metadata_needs_changes }}</strong>
+                </div>
+
+                <button type="submit">
+                  {{ tr.apply_metadata_and_prepare }}
+                </button>
+                {% endif %}
+              </form>
+            </div>
+          </div>
+
+          {% if item.manual_override %}
+          <div class="manual-import-candidate best-match">
+            <h3>{{ tr.manual_override_preview }}</h3>
+
+            <p>
+              <strong>{{ tr.album }}:</strong>
+              {{ item.manual_override.album.title }}
+            </p>
+
+            <p>
+              <strong>{{ tr.track_title }}:</strong>
+
+              {% if item.manual_override.tracks %} {{
+              item.manual_override.tracks[0].trackNumber }} - {{
+              item.manual_override.tracks[0].title }} {% else %} - {% endif %}
+            </p>
+
+            <p>
+              <strong>Album ID:</strong>
+              {{ item.manual_override.albumId }}
+            </p>
+
+            <p>
+              <strong>Release ID:</strong>
+              {{ item.manual_override.albumReleaseId or "-" }}
+            </p>
+
+            <!-- prettier-ignore -->
+            <form
+              method="post"
+              action="{{ url_for('manual_import_execute', album_id=album.id) }}"
+            >
+              <input
+                type="hidden"
+                name="filename"
+                value="{{ item.filename }}"
+              />
+
+              {% if item.track_already_imported and item.track_file_id %}
+              <input
+                type="hidden"
+                name="existing_track_file_id"
+                value="{{ item.track_file_id }}"
+              />
+              {% endif %}
+
+              {% if item.track_already_imported %}
+              <label class="replace-existing-option">
+                <input
+                  type="checkbox"
+                  name="replace_existing"
+                  value="1"
+                />
+                {{ tr.replace_existing_file }}
+              </label>
+              {% endif %}
+
+              <p class="muted individual-import-help">
+                {{ tr.individual_import_help }}
+              </p>
+
+              <button type="submit" class="secondary">
+                {{ tr.individual_import }}
+              </button>
+            </form>
+          </div>
+
+          {% else %}
+          <div class="flash-message flash-warning">
+            {{ tr.no_lidarr_candidates }}
+          </div>
+          {% endif %} {% endif %}
+        </div>
+        {% endfor %} {% else %}
+        <div class="card">
+          <h2>{{ tr.no_source_files_title }}</h2>
+          <p>{{ tr.no_source_files_message }}</p>
+
+          <a class="button-link" href="/downloads">
+            {{ tr.go_to_downloads }}
+          </a>
+        </div>
+        {% endif %}
+
+        <!-- prettier-ignore -->
+        <a
+          class="button-link"
+          href="{{ url_for('album_details', album_id=album.id) }}"
+        >
+          {{ tr.back }}
+        </a>
+      </main>
+    </div>
+
+    <script>
+      function updateBatchSelection() {
+        const checkboxes = document.querySelectorAll(".batch-track-checkbox");
+
+        const selected = Array.from(checkboxes).filter(
+          (checkbox) => checkbox.checked,
+        ).length;
+
+        const countElement = document.getElementById("batch-selected-count");
+
+        const submitButton = document.getElementById("batch-import-button");
+
+        if (countElement) {
+          const template = countElement.dataset.template || "{count}";
+
+          countElement.textContent = template.replace("{count}", selected);
+        }
+
+        if (submitButton) {
+          submitButton.disabled = selected === 0;
+        }
+      }
+
+      function disableBatchSubmit(form) {
+        const submitButton = form.querySelector('button[type="submit"]');
+
+        if (submitButton) {
+          submitButton.disabled = true;
+        }
+      }
+
+      document.querySelectorAll(".batch-track-checkbox").forEach((checkbox) => {
+        checkbox.addEventListener("change", updateBatchSelection);
+      });
+
+      updateBatchSelection();
+    </script>
+  </body>
+</html>

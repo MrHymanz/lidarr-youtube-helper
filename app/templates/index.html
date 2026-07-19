@@ -1,73 +1,75 @@
 <!doctype html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <title>{{ tr.title }}</title>
-  <link rel="stylesheet" href="/static/style.css">
-</head>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ tr.title }}</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  </head>
 
-<body>
-<div class="layout">
-
-  <aside class="sidebar">
-    <div class="logo">◉ Lidarr Helper</div>
-      <a class="nav" href="{{ lidarr_url }}" target="_blank">
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="logo">◉ Lidarr Helper</div>
+        <a class="nav" href="{{ lidarr_url }}" target="_blank">
           {{ tr.library }}
-      </a>
+        </a>
 
-      <a class="nav active" href="/">
-          YouTube Helper
-      </a>
+        <a class="nav active" href="/"> YouTube Helper </a>
 
-      <a class="nav" href="/downloads">
-          {{ tr.downloads }}
-      </a>
+        <a class="nav" href="/downloads"> {{ tr.downloads }} </a>
 
-      <a class="nav" href="/incomplete">
-          {{ tr.incomplete_albums }}
-      </a>
+        <a class="nav" href="/playlists">{{ tr.playlists }}</a>
 
-      <a class="nav" href="{{ lidarr_url }}/wanted/missing" target="_blank">
+        <a class="nav" href="/incomplete"> {{ tr.incomplete_albums }} </a>
+
+        <a class="nav" href="{{ lidarr_url }}/wanted/missing" target="_blank">
           {{ tr.wanted }}
-      </a>
+        </a>
 
-      <a class="nav" href="/settings">
-          {{ tr.settings }}
-      </a>
-  </aside>
+        <a class="nav" href="/settings"> {{ tr.settings }} </a>
+      </aside>
 
-  <main class="content">
-    <h1>{{ tr.title }}</h1>
+      <main class="content">
+        <h1>{{ tr.title }}</h1>
 
-    <div class="card help-box">
-      <h3>{{ tr.how_to_use }}</h3>
-      <p><strong>{{ tr.full_album_video }}</strong><br>{{ tr.full_album_desc }}</p>
-      <p><strong>{{ tr.playlist_tracks }}</strong><br>{{ tr.playlist_desc }}</p>
-      <p><strong>{{ tr.recommended }}</strong> {{ tr.recommended_desc }}</p>
-    </div>
+        <div class="card help-box">
+          <h3>{{ tr.how_to_use }}</h3>
+          <p>
+            <strong>{{ tr.full_album_video }}</strong><br />{{
+            tr.full_album_desc }}
+          </p>
+          <p>
+            <strong>{{ tr.playlist_tracks }}</strong><br />{{ tr.playlist_desc
+            }}
+          </p>
+          <p><strong>{{ tr.recommended }}</strong> {{ tr.recommended_desc }}</p>
+        </div>
 
-    <div class="toolbar">
-      <form method="post" action="/scan">
-        <button type="submit">{{ tr.scan }}</button>
-      </form>
-
-      <form method="post" action="/download">
-        <button type="submit">{{ tr.download_queue }}</button>
-      </form>
-    </div>
-
-    <div class="card">
-      <h2>{{ tr.queue }} <span class="queue-count">{{ queue|length }}</span></h2>
-
-      {% if queue %}
-        <div class="queue-actions">
-          <form method="post" action="/queue/clear">
-            <button type="submit">Clear queue</button>
+        <div class="toolbar">
+          <form method="post" action="/scan">
+            <button type="submit">{{ tr.scan }}</button>
           </form>
         </div>
 
-        <ul class="queue-list">
-          {% for item in queue %}
+        <div class="card">
+          <h2>
+            {{ tr.queue }} <span class="queue-count">{{ queue|length }}</span>
+          </h2>
+
+          {% if queue %}
+          <div class="queue-actions">
+            <form method="post" action="/download">
+              <button type="submit">{{ tr.download_queue }}</button>
+            </form>
+
+            <form method="post" action="/queue/clear">
+              <button type="submit">Clear queue</button>
+            </form>
+          </div>
+
+          <ul class="queue-list">
+            {% for item in queue %}
             <li class="queue-item">
               <div class="queue-item-title">
                 {{ item.key }}
@@ -76,107 +78,124 @@
 
               <div class="queue-item-actions">
                 <form method="post" action="/queue/move">
-                  <input type="hidden" name="key" value="{{ item.key }}">
-                  <input type="hidden" name="direction" value="up">
+                  <input type="hidden" name="key" value="{{ item.key }}" />
+                  <input type="hidden" name="direction" value="up" />
                   <button type="submit">↑</button>
                 </form>
 
                 <form method="post" action="/queue/move">
-                  <input type="hidden" name="key" value="{{ item.key }}">
-                  <input type="hidden" name="direction" value="down">
+                  <input type="hidden" name="key" value="{{ item.key }}" />
+                  <input type="hidden" name="direction" value="down" />
                   <button type="submit">↓</button>
                 </form>
 
                 <form method="post" action="/queue/remove">
-                  <input type="hidden" name="key" value="{{ item.key }}">
+                  <input type="hidden" name="key" value="{{ item.key }}" />
                   <button type="submit">Remove</button>
                 </form>
               </div>
             </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p class="muted">{{ tr.queue_empty }}</p>
-      {% endif %}
-    </div>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="muted">{{ tr.queue_empty }}</p>
+          {% endif %}
+        </div>
 
-    <h2>{{ tr.review }}</h2>
+        <h2>{{ tr.review }}</h2>
 
-    {% for album in albums %}
-    <div class="card">
-      <div class="album-title">{{ album.artist }} - {{ album.album }} {{ album.year }}</div>
-
-      <small>{{ tr.automatic_query }} {{ album.query }}</small>
-
-      <div class="search-links">
-        <a href="{{ album.music_search_url }}" target="_blank" rel="noopener noreferrer">
-          {{ tr.open_ytm }}
-        </a>
-        |
-        <a href="{{ album.youtube_search_url }}" target="_blank" rel="noopener noreferrer">
-          {{ tr.open_yt }}
-        </a>
-      </div>
-
-      <form method="post" action="/queue">
-        <input type="hidden" name="key" value="{{ album.key }}">
-        <input type="hidden" name="artist" value="{{ album.artist }}">
-        <input type="hidden" name="album" value="{{ album.album }}">
-
-        <h3>{{ tr.automatic_results }}</h3>
-
-        {% for result in album.results %}
-          <div class="result">
-            <label>
-              <input type="radio" name="url" value="{{ result.url }}">
-              <a href="{{ result.url }}" target="_blank" rel="noopener noreferrer">
-                {{ result.title }}
-              </a>
-            </label>
-            <br>
-            <small>{{ tr.best_video }}</small>
+        {% for album in albums %}
+        <div class="card">
+          <div class="album-title">
+            {{ album.artist }} - {{ album.album }} {{ album.year }}
           </div>
+
+          <small>{{ tr.automatic_query }} {{ album.query }}</small>
+
+          <div class="search-links">
+            <a
+              href="{{ album.music_search_url }}"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ tr.open_ytm }}
+            </a>
+            |
+            <a
+              href="{{ album.youtube_search_url }}"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ tr.open_yt }}
+            </a>
+          </div>
+
+          <form method="post" action="/queue">
+            <input type="hidden" name="key" value="{{ album.key }}" />
+            <input type="hidden" name="artist" value="{{ album.artist }}" />
+            <input type="hidden" name="album" value="{{ album.album }}" />
+
+            <h3>{{ tr.automatic_results }}</h3>
+
+            {% for result in album.results %}
+            <div class="result">
+              <label>
+                <input type="radio" name="url" value="{{ result.url }}" />
+                <a
+                  href="{{ result.url }}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ result.title }}
+                </a>
+              </label>
+              <br />
+              <small>{{ tr.best_video }}</small>
+            </div>
+            {% endfor %}
+
+            <div class="custom-url">
+              <strong>{{ tr.custom_url }}</strong>
+              <input
+                type="text"
+                name="custom_url"
+                placeholder="{{ tr.custom_placeholder }}"
+              />
+              <small>{{ tr.custom_hint }}</small>
+            </div>
+
+            <div class="download-mode">
+              <strong>{{ tr.download_mode }}</strong>
+
+              <p>
+                <label>
+                  <input type="radio" name="mode" value="video" checked />
+                  {{ tr.single_video }} </label
+                ><br />
+                <small>{{ tr.single_video_hint }}</small>
+              </p>
+
+              <p>
+                <label>
+                  <input type="radio" name="mode" value="playlist" />
+                  {{ tr.playlist_tracks }} </label
+                ><br />
+                <small>{{ tr.playlist_hint }}</small>
+              </p>
+            </div>
+
+            <p>
+              <label>
+                <input type="radio" name="url" value="skip" />
+                {{ tr.skip }}
+              </label>
+            </p>
+
+            <button type="submit">{{ tr.add_queue }}</button>
+          </form>
+        </div>
         {% endfor %}
-
-        <div class="custom-url">
-          <strong>{{ tr.custom_url }}</strong>
-          <input type="text" name="custom_url" placeholder="{{ tr.custom_placeholder }}">
-          <small>{{ tr.custom_hint }}</small>
-        </div>
-
-        <div class="download-mode">
-          <strong>{{ tr.download_mode }}</strong>
-
-          <p>
-            <label>
-              <input type="radio" name="mode" value="video" checked>
-              {{ tr.single_video }}
-            </label><br>
-            <small>{{ tr.single_video_hint }}</small>
-          </p>
-
-          <p>
-            <label>
-              <input type="radio" name="mode" value="playlist">
-              {{ tr.playlist_tracks }}
-            </label><br>
-            <small>{{ tr.playlist_hint }}</small>
-          </p>
-        </div>
-
-        <p>
-          <label>
-            <input type="radio" name="url" value="skip">
-            {{ tr.skip }}
-          </label>
-        </p>
-
-        <button type="submit">{{ tr.add_queue }}</button>
-      </form>
+      </main>
     </div>
-    {% endfor %}
-  </main>
-
-</div>
-</body>
+  </body>
 </html>

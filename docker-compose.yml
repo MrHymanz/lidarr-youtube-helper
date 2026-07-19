@@ -9,7 +9,11 @@ services:
       - LIDARR_URL=${LIDARR_URL}
       - LIDARR_API_KEY=${LIDARR_API_KEY}
       - DOWNLOAD_DIR=${DOWNLOAD_DIR}
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
+      - YOUTUBE_COOKIES_FILE=${YOUTUBE_COOKIES_FILE}
     volumes:
       - ./app:/app
-      - /data/media/music/YouTube/Lidarr Missing:/downloads
+      - ./config:/config
+      - /data/media/music:/data/media/music
+      - /data/downloads:/data/downloads
     restart: unless-stopped
