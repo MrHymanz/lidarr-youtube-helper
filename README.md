@@ -1,134 +1,303 @@
-![Docker](https://img.shields.io/badge/docker-supported-blue)
-![Python](https://img.shields.io/badge/python-3.12-green)
-![License](https://img.shields.io/badge/license-MIT-orange)
 # Lidarr YouTube Helper
 
-A lightweight web application that helps Lidarr users find missing albums on YouTube and YouTube Music, review matches, and download them using yt-dlp.
+```{=html}
+<p align="center">
+```
+`<img src="screenshots/lidarr1dashboard.png" width="900" alt="Dashboard">`{=html}
+```{=html}
+</p>
+```
+```{=html}
+<p align="center">
+```
+![Docker](https://img.shields.io/badge/Docker-Supported-2496ED?logo=docker&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-Framework-000000?logo=flask)
+![yt-dlp](https://img.shields.io/badge/yt--dlp-Integrated-FFCC00)
+![MIT](https://img.shields.io/badge/License-MIT-green)
 
-## Current Features
-## v0.2.0-alpha
+```{=html}
+</p>
+```
+A companion application for **Lidarr** that streamlines discovering,
+downloading, reviewing and preparing missing music from **YouTube** and
+**YouTube Music**.
 
-- Scan Lidarr missing albums
-- Review YouTube search results
-- Paste custom YouTube Music album URLs
-- Queue downloads
-- Download full album videos
-- Download playlists as separate tracks
-- Multi-language UI
-- Docker deployment
-- Queue management
-- Download activity page
-- Failed download tracking
-- Timestamped download history
+------------------------------------------------------------------------
 
-## Screenshots
+# Table of Contents
 
-![Main Interface](screenshots/lidarr-helper-1.png)
-![Main Interface](screenshots/lidarr-helper-2.png)
+-   Features
+-   Screenshots
+-   Why?
+-   Workflow
+-   Installation
+-   Docker
+-   Configuration
+-   YouTube Cookies
+-   Usage
+-   FAQ
+-   Roadmap
+-   Contributing
+-   License
+-   Disclaimer
 
-## Requirements
+------------------------------------------------------------------------
 
-* Docker
-* Docker Compose
-* Lidarr
-* Internet access for YouTube searches
+# Why Lidarr YouTube Helper?
 
-## Installation
+Managing missing albums manually usually means switching between Lidarr,
+YouTube, file explorers and metadata editors.
 
-Clone the repository:
+Lidarr YouTube Helper combines those steps into one workflow:
 
-```bash
-git clone https://github.com/MrHymanz/lidarr-youtube-helper.git
-cd lidarr-youtube-helper
+-   Scan missing albums
+-   Find music on YouTube / YouTube Music
+-   Queue downloads
+-   Review metadata
+-   Preview imports
+-   Import back into Lidarr
+
+------------------------------------------------------------------------
+
+# Features
+
+## 📚 Library Management
+
+-   Scan Lidarr for missing albums
+-   Detect incomplete albums
+-   Browse album details
+-   View missing tracks
+-   Direct Lidarr API integration
+
+## ⬇️ Download Management
+
+-   Download complete album videos
+-   Download YouTube Music albums
+-   Download playlists
+-   Download individual missing tracks
+-   Queue management with reordering
+-   Playlist download limits
+-   Download history
+-   Failed download tracking
+
+## 📥 Import Workflow
+
+-   Import Preview
+-   Automatic target folder detection
+-   Existing track detection
+-   Safe replacement workflow
+-   Metadata normalization
+-   Metadata review
+-   Refresh artist in Lidarr after import
+
+## 🎵 Playlist Support
+
+-   Save playlists
+-   Queue playlists
+-   Queue all playlists
+-   Automatic playlist title detection
+-   Configurable limits
+
+## 🌍 User Experience
+
+-   Responsive interface
+-   Multi-language support
+-   Settings page
+-   Optional YouTube cookie authentication
+
+## 🐳 Deployment
+
+-   Docker
+-   Flask
+-   Environment-based configuration
+-   Automatic Deno installation
+
+------------------------------------------------------------------------
+
+# Screenshots
+
+  ------------------- ---------------------------------------------------
+  Dashboard           ![](screenshots/lidarr1dashboard.png)
+  Missing Albums      ![](screenshots/lidarr2missingalbums.png)
+  Downloads           ![](screenshots/lidarr3downloads.png)
+  Failed Downloads    ![](screenshots/lidarr4failed.png)
+  Album Details       ![](screenshots/lidarr5albumdetails.png)
+  Incomplete Albums   ![](screenshots/lidarr5incompletealbum.png)
+  Playlist Manager    ![](screenshots/lidarrplaylist.png)
+  Import Preview      ![](screenshots/lidarrimportpreview.png)
+  Metadata Review     ![](screenshots/lidarrimportpreviewmetadata1.png)
+  Metadata Review     ![](screenshots/lidarrimportpreviewmetadata2.png)
+  Languages           ![](screenshots/lidarrlanguages.png)
+  Settings            ![](screenshots/lidarrsettings.png)
+  ------------------- ---------------------------------------------------
+
+------------------------------------------------------------------------
+
+# Workflow
+
+``` text
+Lidarr
+  │
+Scan Missing Albums
+  │
+Album Details
+  │
+Search YouTube / YouTube Music
+  │
+Queue Album / Playlist / Missing Tracks
+  │
+Download
+  │
+Import Preview
+  │
+Metadata Review
+  │
+Import into Lidarr
+  │
+Refresh Artist
 ```
 
-Copy the example environment file:
+------------------------------------------------------------------------
 
-```bash
+# Installation
+
+``` bash
+git clone https://github.com/MrHymanz/lidarr-youtube-helper.git
+cd lidarr-youtube-helper
 cp .env.example .env
 ```
 
-Edit the configuration:
+Configure:
 
-```bash
-nano .env
+``` env
+LIDARR_URL=http://lidarr:8686
+LIDARR_API_KEY=YOUR_API_KEY
+DOWNLOAD_DIR=/data/downloads/lidarr-youtube-helper
+FLASK_SECRET_KEY=CHANGE_ME
+YOUTUBE_COOKIES_FILE=/config/secrets/youtube-cookies.txt
 ```
 
-Build and start:
+Run:
 
-```bash
+``` bash
 docker compose up -d --build
 ```
 
-Open the web interface:
+Open:
 
-```text
-http://SERVER_IP:8999
-```
+    http://SERVER_IP:8999
 
-## Configuration
+------------------------------------------------------------------------
 
-Example:
+# Docker
 
-```env
-LIDARR_URL=http://lidarr:8686
-LIDARR_API_KEY=YOUR_API_KEY
-DOWNLOAD_DIR=/downloads
-```
+The application runs completely inside Docker.
 
-## Usage
+Mounted directories:
 
-### Full Album Video
+-   `/data/media/music`
+-   `/data/downloads`
+-   `./config`
+-   `./app`
 
-Downloads a single YouTube video as one audio file.
+Modern versions of **yt-dlp** require a JavaScript runtime. The
+container installs **Deno** automatically.
 
-Recommended when a complete album has been uploaded as a single video.
+------------------------------------------------------------------------
 
-### Playlist / Album Tracks
+# Configuration
 
-Downloads individual tracks from a YouTube Music album or playlist.
+  Variable               Description
+  ---------------------- ----------------------------
+  LIDARR_URL             Lidarr server URL
+  LIDARR_API_KEY         Lidarr API key
+  DOWNLOAD_DIR           Staging download directory
+  FLASK_SECRET_KEY       Flask session secret
+  YOUTUBE_COOKIES_FILE   Optional cookies file
 
-Recommended for Lidarr imports.
+------------------------------------------------------------------------
 
-### Typical Workflow
+# Optional YouTube Cookies
 
-1. Scan Lidarr missing albums
-2. Open the YouTube Music search
-3. Find the correct album
-4. Paste the album or playlist URL
-5. Select Playlist / Album Tracks
-6. Add to queue
-7. Download queue
-8. Import into Lidarr
+Cookies improve compatibility with:
 
-## Data Storage
+-   YouTube Music
+-   Age restricted videos
+-   Some authenticated playlists
+-   Rate limiting
 
-The following files are intentionally excluded from Git:
+Upload cookies through **Settings**.
 
-```text
-.env
-app/cache.json
-app/queue.json
-app/processed.json
-app/settings.json
-```
+------------------------------------------------------------------------
 
-## Roadmap
+# Usage
 
-* Album cover generation
-* Lidarr API import integration
-* Multi-user support
-* Additional languages
-* Search quality improvements
+1.  Scan Lidarr
+2.  Open Album Details
+3.  Search YouTube
+4.  Queue album / playlist / tracks
+5.  Download
+6.  Review Import Preview
+7.  Adjust metadata
+8.  Import into Lidarr
 
-## License
+------------------------------------------------------------------------
 
-MIT License
+# FAQ
 
-## Disclaimer
+### Does this replace Lidarr?
 
-This project does not provide, host, distribute or include copyrighted media.
+No. It extends Lidarr.
 
-Users are responsible for complying with the Terms of Service and copyright laws applicable in their jurisdiction.
+### Does it support YouTube Music?
 
-This project acts only as a helper interface for Lidarr and yt-dlp.
+Yes.
+
+### Are cookies required?
+
+No.
+
+### Does it automatically import into Lidarr?
+
+Not yet. Import assistance is implemented; further automation is
+planned.
+
+------------------------------------------------------------------------
+
+# Roadmap
+
+-   Automatic Lidarr imports
+-   Duplicate detection improvements
+-   Smarter YouTube matching
+-   Better artwork handling
+-   More metadata providers
+-   Additional languages
+-   Release packages
+-   GitHub Actions
+
+------------------------------------------------------------------------
+
+# Contributing
+
+Bug reports, feature requests and pull requests are welcome.
+
+Please open an issue before implementing major changes.
+
+------------------------------------------------------------------------
+
+# License
+
+MIT License.
+
+------------------------------------------------------------------------
+
+# Disclaimer
+
+This project does not host or distribute copyrighted material.
+
+Users remain responsible for complying with copyright law and the Terms
+of Service of YouTube and YouTube Music.
+
+This project acts solely as a companion application for Lidarr and
+yt-dlp.

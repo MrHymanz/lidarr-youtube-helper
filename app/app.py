@@ -18,6 +18,13 @@ app.secret_key = os.environ["FLASK_SECRET_KEY"]
 LIDARR_URL = os.environ["LIDARR_URL"].rstrip("/")
 LIDARR_API_KEY = os.environ["LIDARR_API_KEY"]
 DOWNLOAD_DIR = Path(os.environ["DOWNLOAD_DIR"])
+YOUTUBE_COOKIES_FILE = Path(
+    os.getenv(
+        "YOUTUBE_COOKIES_FILE",
+        "/config/secrets/youtube-cookies.txt",
+    )
+)
+YOUTUBE_COOKIES_MAX_SIZE = 2 * 1024 * 1024
 
 QUEUE_FILE = Path("/app/queue.json")
 PROCESSED_FILE = Path("/app/processed.json")
@@ -296,6 +303,55 @@ TRANSLATIONS = {
         "playlist_max_items": "Maximum number of tracks",
         "downloaded_new": "Newly downloaded",
         "available_total": "Total available",
+        # ------------------------------------------------------------------
+        # YouTube cookies
+        # ------------------------------------------------------------------
+
+        "youtube_cookies": "YouTube session",
+        "youtube_cookies_help": (
+            "Upload a cookies.txt file exported from your browser to "
+            "allow downloading private or personalized YouTube Music playlists."
+        ),
+        "youtube_cookies_consent": (
+            "I understand that this file grants access to my YouTube session "
+            "and I allow Lidarr YouTube Helper to store and use it locally."
+        ),
+        "youtube_cookies_upload": "Upload cookies",
+        "youtube_cookies_delete": "Delete cookies",
+        "youtube_cookies_file": "cookies.txt file",
+        "youtube_cookies_status_present": "A cookies file is configured.",
+        "youtube_cookies_status_missing": "No cookies file configured.",
+
+        "youtube_cookies_consent_required":
+            "You must agree before uploading a cookies file.",
+        "youtube_cookies_file_required":
+            "Please select a cookies.txt file.",
+        "youtube_cookies_upload_success":
+            "Cookies uploaded successfully.",
+        "youtube_cookies_upload_failed":
+            "The cookies file could not be saved.",
+        "youtube_cookies_delete_success":
+            "Cookies deleted successfully.",
+        "youtube_cookies_delete_failed":
+            "The cookies file could not be deleted.",
+
+        "youtube_cookies_empty":
+            "The uploaded file is empty.",
+        "youtube_cookies_too_large":
+            "The uploaded file is too large.",
+        "youtube_cookies_invalid_encoding":
+            "The uploaded file is not valid UTF-8.",
+        "youtube_cookies_invalid_format":
+            "The uploaded file is not a valid Netscape cookies file.",
+        "youtube_cookies_no_cookies":
+            "No cookies were found in the uploaded file.",
+        "youtube_cookies_no_youtube_cookies":
+            "The uploaded file does not contain YouTube cookies.",
+
+        "youtube_cookies_required_hint":
+            "This playlist requires a signed-in YouTube session. Upload a cookies.txt file in Settings.",
+        "youtube_cookies_expired_hint":
+            "The stored YouTube session has expired. Upload a new cookies.txt file in Settings.",
     },
     "nl": {
         "language_name": "Nederlands",
@@ -564,6 +620,55 @@ TRANSLATIONS = {
         "playlist_max_items": "Maximum aantal nummers",
         "downloaded_new": "Nieuw gedownload",
         "available_total": "Totaal aanwezig",
+        # ------------------------------------------------------------------
+        # YouTube-cookies
+        # ------------------------------------------------------------------
+
+        "youtube_cookies": "YouTube-sessie",
+        "youtube_cookies_help": (
+            "Upload een uit je browser geëxporteerd cookies.txt-bestand om "
+            "privé- of gepersonaliseerde YouTube Music-playlists te kunnen downloaden."
+        ),
+        "youtube_cookies_consent": (
+            "Ik begrijp dat dit bestand toegang geeft tot mijn YouTube-sessie "
+            "en geef Lidarr YouTube Helper toestemming om dit lokaal op te slaan en te gebruiken."
+        ),
+        "youtube_cookies_upload": "Cookies uploaden",
+        "youtube_cookies_delete": "Cookies verwijderen",
+        "youtube_cookies_file": "cookies.txt-bestand",
+        "youtube_cookies_status_present": "Er is een cookiesbestand geconfigureerd.",
+        "youtube_cookies_status_missing": "Er is geen cookiesbestand geconfigureerd.",
+
+        "youtube_cookies_consent_required":
+            "Je moet eerst akkoord gaan voordat je een cookiesbestand kunt uploaden.",
+        "youtube_cookies_file_required":
+            "Selecteer een cookies.txt-bestand.",
+        "youtube_cookies_upload_success":
+            "Cookies succesvol geüpload.",
+        "youtube_cookies_upload_failed":
+            "Het cookiesbestand kon niet worden opgeslagen.",
+        "youtube_cookies_delete_success":
+            "Cookies succesvol verwijderd.",
+        "youtube_cookies_delete_failed":
+            "Het cookiesbestand kon niet worden verwijderd.",
+
+        "youtube_cookies_empty":
+            "Het geüploade bestand is leeg.",
+        "youtube_cookies_too_large":
+            "Het geüploade bestand is te groot.",
+        "youtube_cookies_invalid_encoding":
+            "Het geüploade bestand is geen geldig UTF-8-bestand.",
+        "youtube_cookies_invalid_format":
+            "Het geüploade bestand is geen geldig Netscape-cookiesbestand.",
+        "youtube_cookies_no_cookies":
+            "Er zijn geen cookies gevonden in het geüploade bestand.",
+        "youtube_cookies_no_youtube_cookies":
+            "Het geüploade bestand bevat geen YouTube-cookies.",
+
+        "youtube_cookies_required_hint":
+            "Voor deze playlist is een aangemelde YouTube-sessie vereist. Upload een cookies.txt-bestand via Instellingen.",
+        "youtube_cookies_expired_hint":
+            "De opgeslagen YouTube-sessie is verlopen. Upload een nieuw cookies.txt-bestand via Instellingen.",
     },
     "no": {
         "language_name": "Norsk",
@@ -830,6 +935,55 @@ TRANSLATIONS = {
         "playlist_max_items": "Maksimalt antall spor",
         "downloaded_new": "Nylig lastet ned",
         "available_total": "Totalt tilgjengelig",
+        # ------------------------------------------------------------------
+        # YouTube-informasjonskapsler
+        # ------------------------------------------------------------------
+
+        "youtube_cookies": "YouTube-økt",
+        "youtube_cookies_help": (
+            "Last opp en cookies.txt-fil eksportert fra nettleseren din for å "
+            "kunne laste ned private eller personlige YouTube Music-spillelister."
+        ),
+        "youtube_cookies_consent": (
+            "Jeg forstår at denne filen gir tilgang til YouTube-økten min "
+            "og gir Lidarr YouTube Helper tillatelse til å lagre og bruke den lokalt."
+        ),
+        "youtube_cookies_upload": "Last opp informasjonskapsler",
+        "youtube_cookies_delete": "Slett informasjonskapsler",
+        "youtube_cookies_file": "cookies.txt-fil",
+        "youtube_cookies_status_present": "En informasjonskapselfil er konfigurert.",
+        "youtube_cookies_status_missing": "Ingen informasjonskapselfil er konfigurert.",
+
+        "youtube_cookies_consent_required":
+            "Du må godta før du kan laste opp en informasjonskapselfil.",
+        "youtube_cookies_file_required":
+            "Velg en cookies.txt-fil.",
+        "youtube_cookies_upload_success":
+            "Informasjonskapslene ble lastet opp.",
+        "youtube_cookies_upload_failed":
+            "Informasjonskapselfilen kunne ikke lagres.",
+        "youtube_cookies_delete_success":
+            "Informasjonskapslene ble slettet.",
+        "youtube_cookies_delete_failed":
+            "Informasjonskapselfilen kunne ikke slettes.",
+
+        "youtube_cookies_empty":
+            "Den opplastede filen er tom.",
+        "youtube_cookies_too_large":
+            "Den opplastede filen er for stor.",
+        "youtube_cookies_invalid_encoding":
+            "Den opplastede filen er ikke gyldig UTF-8.",
+        "youtube_cookies_invalid_format":
+            "Den opplastede filen er ikke en gyldig Netscape-informasjonskapselfil.",
+        "youtube_cookies_no_cookies":
+            "Ingen informasjonskapsler ble funnet i den opplastede filen.",
+        "youtube_cookies_no_youtube_cookies":
+            "Den opplastede filen inneholder ingen YouTube-informasjonskapsler.",
+
+        "youtube_cookies_required_hint":
+            "Denne spillelisten krever en innlogget YouTube-økt. Last opp en cookies.txt-fil under Innstillinger.",
+        "youtube_cookies_expired_hint":
+            "Den lagrede YouTube-økten har utløpt. Last opp en ny cookies.txt-fil under Innstillinger.",
     },
 }
 
@@ -1115,37 +1269,72 @@ def is_generic_playlist_title(title):
     )
 
 def get_playlist_title(url):
-    command = [
+    if not url:
+        return None
+
+    cmd = [
         "yt-dlp",
+        "--yes-playlist",
         "--flat-playlist",
-        "--playlist-items",
+        "--playlist-end",
         "1",
         "--print",
         "%(playlist_title)s",
-        "--no-warnings",
-        url,
     ]
+
+    cookies_file = get_youtube_cookies_file()
+
+    if cookies_file is not None:
+        cmd.extend([
+            "--cookies",
+            str(cookies_file),
+        ])
+
+        print(
+            f"[PLAYLIST TITLE] Using YouTube cookies: "
+            f"{cookies_file}",
+            flush=True,
+        )
+
+    cmd.append(url)
 
     try:
         result = subprocess.run(
-            command,
+            cmd,
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=60,
         )
-    except (subprocess.SubprocessError, OSError):
+    except subprocess.TimeoutExpired:
+        print(
+            f"[PLAYLIST TITLE] Timeout while reading: {url}",
+            flush=True,
+        )
         return None
 
     if result.returncode != 0:
+        print(
+            f"[PLAYLIST TITLE] yt-dlp failed for {url}: "
+            f"{result.stderr[-1000:]}",
+            flush=True,
+        )
         return None
 
-    for line in result.stdout.splitlines():
-        title = line.strip()
+    titles = [
+        line.strip()
+        for line in result.stdout.splitlines()
+        if line.strip()
+        and line.strip().upper() not in {
+            "NA",
+            "NONE",
+            "NULL",
+        }
+    ]
 
-        if title and title not in {"NA", "None"}:
-            return title
+    if not titles:
+        return None
 
-    return None    
+    return titles[0] 
 
 @app.route("/incomplete")
 def incomplete():
@@ -1430,7 +1619,10 @@ def settings():
         tr=t(),
         current_language=current["language"],
         languages=TRANSLATIONS,
-        lidarr_url=LIDARR_URL
+        lidarr_url=LIDARR_URL,
+        youtube_cookies_configured=(
+            get_youtube_cookies_file() is not None
+        ),
     )
 def get_album_details(album_id):
     albums = requests.get(
@@ -1456,6 +1648,199 @@ def get_album_details(album_id):
     tracks.raise_for_status()
 
     return album, tracks.json()
+
+def get_youtube_playlist_id(url):
+    if not url:
+        return ""
+
+    try:
+        parsed = urlparse(url)
+        query = parse_qs(parsed.query)
+
+        return query.get("list", [""])[0].strip()
+    except (TypeError, ValueError):
+        return ""
+
+
+def is_youtube_mix_url(url):
+    playlist_id = get_youtube_playlist_id(url)
+
+    return playlist_id.startswith("RD")
+
+
+def is_youtube_mix_watch_url(url):
+    if not is_youtube_mix_url(url):
+        return False
+
+    try:
+        parsed = urlparse(url)
+        query = parse_qs(parsed.query)
+
+        return bool(query.get("v", [""])[0].strip())
+    except (TypeError, ValueError):
+        return False
+
+@app.route(
+    "/settings/youtube-cookies/upload",
+    methods=["POST"],
+)
+def upload_youtube_cookies():
+    consent_given = (
+        request.form.get("youtube_cookies_consent")
+        == "yes"
+    )
+
+    if not consent_given:
+        flash(
+            t()["youtube_cookies_consent_required"],
+            "error",
+        )
+        return redirect(url_for("settings"))
+
+    uploaded_file = request.files.get(
+        "youtube_cookies_file"
+    )
+
+    if (
+        uploaded_file is None
+        or not uploaded_file.filename
+    ):
+        flash(
+            t()["youtube_cookies_file_required"],
+            "error",
+        )
+        return redirect(url_for("settings"))
+
+    try:
+        content = uploaded_file.read(
+            YOUTUBE_COOKIES_MAX_SIZE + 1
+        )
+    except OSError as exc:
+        print(
+            f"[YOUTUBE COOKIES] Could not read upload: "
+            f"{exc}",
+            flush=True,
+        )
+
+        flash(
+            t()["youtube_cookies_upload_failed"],
+            "error",
+        )
+        return redirect(url_for("settings"))
+
+    is_valid, error_code = (
+        validate_youtube_cookies_content(content)
+    )
+
+    if not is_valid:
+        translation_key = {
+            "empty": "youtube_cookies_empty",
+            "too_large": "youtube_cookies_too_large",
+            "invalid_encoding":
+                "youtube_cookies_invalid_encoding",
+            "invalid_format":
+                "youtube_cookies_invalid_format",
+            "no_cookies":
+                "youtube_cookies_no_cookies",
+            "no_youtube_cookies":
+                "youtube_cookies_no_youtube_cookies",
+        }.get(
+            error_code,
+            "youtube_cookies_upload_failed",
+        )
+
+        flash(
+            t()[translation_key],
+            "error",
+        )
+        return redirect(url_for("settings"))
+
+    if not ensure_youtube_cookies_directory():
+        flash(
+            t()["youtube_cookies_upload_failed"],
+            "error",
+        )
+        return redirect(url_for("settings"))
+
+    temporary_file = (
+        YOUTUBE_COOKIES_FILE.parent
+        / f".{YOUTUBE_COOKIES_FILE.name}.tmp"
+    )
+
+    try:
+        temporary_file.write_bytes(content)
+        temporary_file.chmod(0o600)
+        temporary_file.replace(
+            YOUTUBE_COOKIES_FILE
+        )
+        YOUTUBE_COOKIES_FILE.chmod(0o600)
+
+    except OSError as exc:
+        print(
+            f"[YOUTUBE COOKIES] Could not save cookies: "
+            f"{exc}",
+            flush=True,
+        )
+
+        try:
+            temporary_file.unlink(
+                missing_ok=True
+            )
+        except OSError:
+            pass
+
+        flash(
+            t()["youtube_cookies_upload_failed"],
+            "error",
+        )
+        return redirect(url_for("settings"))
+
+    print(
+        "[YOUTUBE COOKIES] Cookies file saved",
+        flush=True,
+    )
+
+    flash(
+        t()["youtube_cookies_upload_success"],
+        "success",
+    )
+
+    return redirect(url_for("settings"))
+
+@app.route(
+    "/settings/youtube-cookies/delete",
+    methods=["POST"],
+)
+def delete_youtube_cookies():
+    try:
+        YOUTUBE_COOKIES_FILE.unlink(
+            missing_ok=True
+        )
+
+    except OSError as exc:
+        print(
+            f"[YOUTUBE COOKIES] Could not delete cookies: "
+            f"{exc}",
+            flush=True,
+        )
+
+        flash(
+            t()["youtube_cookies_delete_failed"],
+            "error",
+        )
+        return redirect(url_for("settings"))
+
+    print(
+        "[YOUTUBE COOKIES] Cookies file removed",
+        flush=True,
+    )
+
+    flash(
+        t()["youtube_cookies_delete_success"],
+        "success",
+    )
+
+    return redirect(url_for("settings"))   
 
 
 @app.route("/album/<album_id>")
@@ -3820,6 +4205,123 @@ def update_lidarr_manual_import(manual_override):
 
     return updated_items
 
+def get_youtube_cookies_file():
+    """
+    Return the configured YouTube cookies file when it exists
+    and contains data.
+
+    Returns:
+        Path | None: The usable cookies file, or None when no
+        cookies file is available.
+    """
+    try:
+        if not YOUTUBE_COOKIES_FILE.is_file():
+            return None
+
+        if YOUTUBE_COOKIES_FILE.stat().st_size <= 0:
+            return None
+
+        return YOUTUBE_COOKIES_FILE
+
+    except OSError as exc:
+        print(
+            f"[YOUTUBE COOKIES] Could not inspect cookies file: {exc}",
+            flush=True,
+        )
+        return None    
+
+def ensure_youtube_cookies_directory():
+    """
+    Ensure that the parent directory for the YouTube cookies
+    file exists.
+    """
+    try:
+        YOUTUBE_COOKIES_FILE.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+        return True
+
+    except OSError as exc:
+        print(
+            f"[YOUTUBE COOKIES] Could not create cookies directory: {exc}",
+            flush=True,
+        )
+        return False
+    
+def validate_youtube_cookies_content(content):
+    """
+    Validate an uploaded Netscape cookies.txt file.
+
+    Returns:
+        tuple[bool, str]: Validation result and error code.
+    """
+    if not content:
+        return False, "empty"
+
+    if len(content) > YOUTUBE_COOKIES_MAX_SIZE:
+        return False, "too_large"
+
+    try:
+        text = content.decode("utf-8")
+    except UnicodeDecodeError:
+        return False, "invalid_encoding"
+
+    lines = [
+        line.strip()
+        for line in text.splitlines()
+        if line.strip()
+    ]
+
+    if not lines:
+        return False, "empty"
+
+    header_found = any(
+        line.lower().startswith(
+            "# netscape http cookie file"
+        )
+        for line in lines[:10]
+    )
+
+    if not header_found:
+        return False, "invalid_format"
+
+    cookie_lines = [
+        line
+        for line in lines
+        if not line.startswith("#")
+    ]
+
+    if not cookie_lines:
+        return False, "no_cookies"
+
+    valid_cookie_line_found = False
+    youtube_cookie_found = False
+
+    for line in cookie_lines:
+        parts = line.split("\t")
+
+        if len(parts) != 7:
+            continue
+
+        valid_cookie_line_found = True
+
+        domain = parts[0].lower().lstrip(".")
+
+        if (
+            domain == "youtube.com"
+            or domain.endswith(".youtube.com")
+        ):
+            youtube_cookie_found = True
+
+    if not valid_cookie_line_found:
+        return False, "invalid_format"
+
+    if not youtube_cookie_found:
+        return False, "no_youtube_cookies"
+
+    return True, ""    
+
 def start_lidarr_manual_import(
     updated_items,
     import_mode="Move",
@@ -4193,21 +4695,30 @@ def get_youtube_download_source(item):
     url = str(item.get("url") or "").strip()
 
     if not url:
-        return ""
+        return None
+
+    mode = str(item.get("mode") or "video").strip()
+
+    # Opgeslagen playlists moeten altijd met hun volledige URL
+    # aan yt-dlp worden doorgegeven.
+    if mode == "playlist":
+        return url
+
+    # Dynamische YouTube-mixen werken alleen correct met de volledige
+    # watch-URL. Een playlist?list=RD...-URL geeft vaak:
+    # "The playlist does not exist".
+    if is_youtube_mix_watch_url(url):
+        return url
 
     parsed = urlparse(url)
 
-    is_youtube_search_page = (
-        parsed.netloc.lower()
-        in {
-            "youtube.com",
-            "www.youtube.com",
-            "m.youtube.com",
-        }
-        and parsed.path == "/results"
-    )
-
-    if not is_youtube_search_page:
+    # Normale video-URL's kunnen rechtstreeks worden gedownload.
+    if parsed.hostname in {
+        "youtube.com",
+        "www.youtube.com",
+        "music.youtube.com",
+        "youtu.be",
+    } and parsed.path not in {"/results"}:
         return url
 
     artist = str(item.get("artist") or "").strip()
@@ -4237,6 +4748,9 @@ def get_youtube_download_source(item):
     if not search_query:
         search_query = original_query
 
+    if not search_query:
+        return None
+
     return f"ytsearch1:{search_query}"
 
 @app.route("/download", methods=["POST"])
@@ -4262,9 +4776,7 @@ def download_queue():
             exist_ok=True,
         )
 
-        download_source = get_youtube_download_source(
-            item
-        )
+        download_source = get_youtube_download_source(item)
 
         if not download_source:
             print(
@@ -4284,10 +4796,12 @@ def download_queue():
             }
 
             remaining.append(item)
+
             add_download_record(
                 FAILED_FILE,
                 record,
             )
+
             continue
 
         print(
@@ -4336,7 +4850,6 @@ def download_queue():
 
             cmd = [
                 "yt-dlp",
-                download_source,
                 "--yes-playlist",
                 "--ignore-errors",
                 "--no-abort-on-error",
@@ -4367,21 +4880,37 @@ def download_queue():
                     str(target / output_template),
                 ]
             )
+
         else:
+            output_template = "%(title)s.%(ext)s"
+
             cmd = [
                 "yt-dlp",
-                download_source,
                 "--no-playlist",
                 *common_options,
                 "-o",
-                str(
-                    target
-                    / "%(title)s.%(ext)s"
-                ),
+                str(target / output_template),
             ]
 
-        try:
+        cookies_file = get_youtube_cookies_file()
 
+        if cookies_file is not None:
+            cmd.extend(
+                [
+                    "--cookies",
+                    str(cookies_file),
+                ]
+            )
+
+            print(
+                f"[DOWNLOAD] Using YouTube cookies: "
+                f"{cookies_file}",
+                flush=True,
+            )
+
+        cmd.append(download_source)
+
+        try:
             result = subprocess.run(
                 cmd,
                 capture_output=True,
@@ -4395,6 +4924,7 @@ def download_queue():
                 if isinstance(exc.stdout, str)
                 else ""
             )
+
             stderr = (
                 exc.stderr
                 if isinstance(exc.stderr, str)
@@ -4423,10 +4953,12 @@ def download_queue():
             }
 
             remaining.append(item)
+
             add_download_record(
                 FAILED_FILE,
                 record,
             )
+
             continue
 
         print(
@@ -4462,7 +4994,10 @@ def download_queue():
                 "*.ogg",
             )
             for path in target.glob(pattern)
-            if path.is_file() and path.stat().st_size > 0
+            if (
+                path.is_file()
+                and path.stat().st_size > 0
+            )
         )
 
         stderr = result.stderr[-4000:]
@@ -4480,7 +5015,9 @@ def download_queue():
         ):
             stderr = (
                 t()["playlist_watch_url_hint"]
-                + "\n\n----------------------------------------\n\n"
+                + "\n\n"
+                + "----------------------------------------"
+                + "\n\n"
                 + stderr
             )
 
@@ -4501,21 +5038,23 @@ def download_queue():
             ],
             "max_items": max_items,
             "new_file_count": len(new_files),
-            "available_file_count": len(existing_audio_files),
+            "available_file_count": len(
+                existing_audio_files
+            ),
             "returncode": result.returncode,
             "stdout": result.stdout[-4000:],
             "stderr": stderr,
         }
 
         if mode == "playlist":
+            # Een playlist is geslaagd zodra er bruikbare bestanden zijn
+            # gedownload. yt-dlp kan returncode 1 geven wanneer enkele
+            # playlist-items verwijderd, privé of niet beschikbaar zijn.
             download_succeeded = bool(
-                result.returncode == 0
-                and (
-                    new_files
-                    or (
-                        already_downloaded
-                        and existing_audio_files
-                    )
+                new_files
+                or (
+                    already_downloaded
+                    and existing_audio_files
                 )
             )
         else:
@@ -4532,7 +5071,14 @@ def download_queue():
                 record,
             )
 
-            if new_files:
+            if result.returncode != 0:
+                print(
+                    f"[DOWNLOAD QUEUE] Playlist completed with "
+                    f"{len(new_files)} new file(s), but one or more "
+                    f"playlist items were unavailable",
+                    flush=True,
+                )
+            elif new_files:
                 print(
                     f"[DOWNLOAD QUEUE] Downloaded "
                     f"{len(new_files)} new file(s) for {key}",
@@ -4541,11 +5087,11 @@ def download_queue():
             else:
                 print(
                     f"[DOWNLOAD QUEUE] No new files created for {key}, "
-                    f"but yt-dlp confirmed that "
-                    f"{len(existing_audio_files)} audio file(s) "
+                    f"but {len(existing_audio_files)} audio file(s) "
                     f"are already available in staging",
                     flush=True,
                 )
+
         else:
             remaining.append(item)
 
@@ -4555,8 +5101,8 @@ def download_queue():
             )
 
             print(
-                f"[DOWNLOAD QUEUE] Failed or no usable audio file "
-                f"available for {key}",
+                f"[DOWNLOAD QUEUE] Failed or no usable "
+                f"audio file available for {key}",
                 flush=True,
             )
 
@@ -4575,6 +5121,7 @@ def download_queue():
         PROCESSED_FILE,
         sorted(set(processed)),
     )
+
     save_json(
         QUEUE_FILE,
         remaining,

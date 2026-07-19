@@ -10,6 +10,7 @@
     <div class="layout">
       <aside class="sidebar">
         <div class="logo">◉ Lidarr Helper</div>
+
         <a class="nav" href="{{ lidarr_url }}" target="_blank">
           {{ tr.library }}
         </a>
@@ -20,40 +21,151 @@
 
         <a class="nav" href="/playlists"> {{ tr.playlists }} </a>
 
-        <a class="nav" href="/incomplete"> {{ tr.incomplete_albums }} </a>
+        <a class="nav" href="/incomplete">
+          {{ tr.incomplete_albums }}
+        </a>
 
         <a class="nav" href="{{ lidarr_url }}/wanted/missing" target="_blank">
           {{ tr.wanted }}
         </a>
 
-        <a class="nav active" href="/settings"> {{ tr.settings }} </a>
+        <a class="nav active" href="/settings">
+          {{ tr.settings }}
+        </a>
       </aside>
 
       <main class="content">
         <h1>{{ tr.settings_title }}</h1>
 
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages">
+          {% for category, message in messages %}
+          <div class="flash-message flash-{{ category }}">
+            {{ message }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
         <div class="card">
+          <h2>{{ tr.language }}</h2>
+
           <form method="post" action="/settings">
-            <label>
+            <label for="language">
               <strong>{{ tr.language }}</strong>
             </label>
 
-              <select name="language">
-                {% for code, lang in languages.items() %}
-                <option
-                  value="{{ code }}"
-                  {% if code == current_language %}selected{% endif %}
-                >
-                  {{ lang.language_name }}
-                </option>
-                {% endfor %}
-              </select>
+            <select id="language" name="language">
+              {% for code, lang in languages.items() %}
+              <option
+                value="{{ code }}"
+                {% if code == current_language %}selected{% endif %}
+              >
+                {{ lang.language_name }}
+              </option>
+              {% endfor %}
+            </select>
 
-            <br /><br />
+            <div class="form-actions">
+              <button type="submit">
+                {{ tr.save }}
+              </button>
 
-            <button type="submit">{{ tr.save }}</button>
-            <a class="button-link" href="/">{{ tr.back }}</a>
+              <a class="button-link" href="/">
+                {{ tr.back }}
+              </a>
+            </div>
           </form>
+        </div>
+
+        <div class="card youtube-session-card">
+          <div class="youtube-session-header">
+            <div>
+              <h2>{{ tr.youtube_cookies }}</h2>
+              <p class="youtube-session-description">
+                {{ tr.youtube_cookies_help }}
+              </p>
+            </div>
+
+            {% if youtube_cookies_configured %}
+            <div class="status-badge status-success">
+              <span class="status-dot"></span>
+              {{ tr.youtube_cookies_status_present }}
+            </div>
+            {% else %}
+            <div class="status-badge status-warning">
+              <span class="status-dot"></span>
+              {{ tr.youtube_cookies_status_missing }}
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="youtube-session-content">
+            <form
+              method="post"
+              action="{{ url_for('upload_youtube_cookies') }}"
+              enctype="multipart/form-data"
+              class="youtube-cookies-form"
+            >
+              <div class="form-group">
+                <label for="youtube-cookies-file">
+                  <strong>{{ tr.youtube_cookies_file }}</strong>
+                </label>
+
+                <div class="file-upload-field">
+                  <input
+                    id="youtube-cookies-file"
+                    name="youtube_cookies_file"
+                    type="file"
+                    accept=".txt,text/plain"
+                    required
+                  />
+                </div>
+              </div>
+
+              <label class="cookie-consent-box">
+                <input
+                  name="youtube_cookies_consent"
+                  type="checkbox"
+                  value="yes"
+                  required
+                />
+
+                <span>
+                  {{ tr.youtube_cookies_consent }}
+                </span>
+              </label>
+
+              <div class="youtube-cookie-actions">
+                <button type="submit">
+                  {% if youtube_cookies_configured %}
+                  {{ tr.youtube_cookies_upload }}
+                  {% else %}
+                  {{ tr.youtube_cookies_upload }}
+                  {% endif %}
+                </button>
+              </div>
+            </form>
+
+            {% if youtube_cookies_configured %}
+            <div class="cookie-delete-section">
+              <form
+                method="post"
+                action="{{ url_for('delete_youtube_cookies') }}"
+              >
+                <button
+                  class="danger-button"
+                  type="submit"
+                  onclick="return confirm('{{ tr.youtube_cookies_delete }}?')"
+                >
+                  {{ tr.youtube_cookies_delete }}
+                </button>
+              </form>
+            </div>
+            {% endif %}
+          </div>
         </div>
       </main>
     </div>

@@ -698,3 +698,170 @@ button.secondary {
 .queue-actions form {
   margin: 0;
 }
+
+.youtube-session-card {
+  margin-top: 26px;
+  overflow: hidden;
+}
+
+.youtube-session-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.youtube-session-header h2 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.youtube-session-description {
+  max-width: 820px;
+  margin: 0;
+  line-height: 1.6;
+  color: #b8b8b8;
+}
+
+.status-badge {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 14px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.status-success {
+  color: #9fe3b1;
+  background: rgba(55, 165, 90, 0.12);
+  border-color: rgba(80, 190, 110, 0.35);
+}
+
+.status-success .status-dot {
+  background: #64d486;
+  box-shadow: 0 0 8px rgba(100, 212, 134, 0.6);
+}
+
+.status-warning {
+  color: #edc57c;
+  background: rgba(210, 150, 45, 0.1);
+  border-color: rgba(220, 165, 60, 0.35);
+}
+
+.status-warning .status-dot {
+  background: #e4ae4f;
+  box-shadow: 0 0 8px rgba(228, 174, 79, 0.5);
+}
+
+.youtube-session-content {
+  padding-top: 24px;
+}
+
+.youtube-cookies-form {
+  max-width: 900px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.file-upload-field {
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.14);
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+  border-radius: 7px;
+}
+
+.file-upload-field input[type="file"] {
+  display: block;
+  width: 100%;
+  color: #d2d2d2;
+}
+
+.file-upload-field input[type="file"]::file-selector-button {
+  margin-right: 14px;
+  padding: 9px 14px;
+  color: #e4e4e4;
+  cursor: pointer;
+  background: #444;
+  border: 1px solid #606060;
+  border-radius: 5px;
+}
+
+.file-upload-field input[type="file"]::file-selector-button:hover {
+  background: #505050;
+}
+
+.cookie-consent-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 16px 18px;
+  line-height: 1.5;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+}
+
+.cookie-consent-box input[type="checkbox"] {
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  margin-top: 3px;
+  cursor: pointer;
+}
+
+.cookie-consent-box span {
+  color: #c9c9c9;
+}
+
+.youtube-cookie-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.cookie-delete-section {
+  max-width: 900px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.danger-button {
+  color: #ffd7d7;
+  background: rgba(185, 55, 55, 0.25);
+  border: 1px solid rgba(220, 85, 85, 0.55);
+}
+
+.danger-button:hover {
+  background: rgba(200, 60, 60, 0.4);
+  border-color: rgba(235, 100, 100, 0.75);
+}
+
+@media (max-width: 850px) {
+  .youtube-session-header {
+    flex-direction: column;
+  }
+
+  .status-badge {
+    white-space: normal;
+  }
+}

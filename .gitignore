@@ -16,9 +16,11 @@ app/settings.json
 app/downloads.json
 app/failed.json
 app/playlists.json
+config/secrets/
 
 # Logs
 *.log
+readme-review.txt
 
 # Temporary files
 tmp/
