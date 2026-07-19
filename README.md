@@ -56,8 +56,6 @@ Lidarr YouTube Helper combines those steps into one workflow:
 
 ## Features
 
-## 📚 Library Management
-
 ### 📚 Library Management
 ### ⬇️ Download Management
 ### 📥 Import Workflow
